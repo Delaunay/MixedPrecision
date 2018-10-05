@@ -56,3 +56,9 @@ def enable_half(object):
     return object.cuda(non_blocking=True)
 
 
+def summary(model, input_size):
+    try:
+        import torchsummary
+        torchsummary.summary(model, input_size, device='cuda' if use_gpu() else 'cpu')
+    except:
+        pass
