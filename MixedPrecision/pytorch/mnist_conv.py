@@ -71,6 +71,13 @@ def main():
     for k, v in vars(args).items():
         print('{:>30}: {}'.format(k, v))
 
+    try:
+        current_device = torch.cuda.current_device()
+        print('{:>30}: {}'.format('GPU Count', torch.cuda.device_count()))
+        print('{:>30}: {}'.format('GPU Name', torch.cuda.get_device_name(current_device)))
+    except:
+        pass
+
     model = MnistConvolution(
         hidden_size=args.hidden_size,
         conv_num=args.conv_num,

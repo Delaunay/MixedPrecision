@@ -121,9 +121,13 @@ def main():
     for k, v in vars(args).items():
         print('{:>30}: {}'.format(k, v))
 
-    current_device = torch.cuda.current_device()
-    print('{:>30}: {}'.format('GPU Count', torch.cuda.device_count()))
-    print('{:>30}: {}'.format('GPU Name', torch.cuda.get_device_name(current_device)))
+    try:
+        current_device = torch.cuda.current_device()
+        print('{:>30}: {}'.format('GPU Count', torch.cuda.device_count()))
+        print('{:>30}: {}'.format('GPU Name', torch.cuda.get_device_name(current_device)))
+    except:
+        pass
+
 
     model = MnistFullyConnected(hidden_size=args.hidden_size, hidden_num=args.hidden_num)
 
