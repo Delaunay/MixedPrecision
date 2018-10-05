@@ -55,6 +55,7 @@ def main():
     import sys
     from MixedPrecision.pytorch.mnist_fully_connected import load_mnist
     from MixedPrecision.pytorch.mnist_fully_connected import train
+    from MixedPrecision.pytorch.mnist_fully_connected import init_weights
     from MixedPrecision.tools.args import get_parser
     from MixedPrecision.tools.utils import summary
     import MixedPrecision.tools.utils as utils
@@ -85,6 +86,7 @@ def main():
 
     model = utils.enable_cuda(model)
     model = utils.enable_half(model)
+    model.apply(init_weights)
 
     summary(model, input_size=(args.batch_size, 1, 784))
 

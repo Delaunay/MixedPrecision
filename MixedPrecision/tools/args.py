@@ -15,7 +15,7 @@ def get_parser():
     parser.add_argument('--hidden_num', default=1, type=int, metavar='HN',
                         help='Number of Hidden Layer for MNIST')
 
-    parser.add_argument('--kernel_size', default=2, type=int, metavar='KS',
+    parser.add_argument('--kernel_size', default=3, type=int, metavar='KS',
                         help='Kernel Size for Conv MNIST')
 
     parser.add_argument('--conv_num', default=32, type=int, metavar='CN',

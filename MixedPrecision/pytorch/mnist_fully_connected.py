@@ -41,7 +41,7 @@ def load_mnist(args):
                            transforms.ToTensor(),
                            transforms.Normalize((0.1307,), (0.3081,))
                        ])),
-        batch_size=args.batch_size, shuffle=True, num_workers=args.workers, pin_memory=True)
+        batch_size=args.batch_size, shuffle=True, num_workers=0, pin_memory=True)
     return train_loader
 
 
@@ -103,6 +103,12 @@ def train(args, model, data):
             1 + epoch, compute_time.avg, compute_time.sd, floss))
 
 
+def init_weights(m):
+    if type(m) == nn.Linear:
+        torch.nn.init.orthogonal_(m.weight)
+        m.bias.data.fill_(0.01)
+
+
 def main():
     import sys
     from MixedPrecision.tools.args import get_parser
@@ -128,11 +134,10 @@ def main():
     except:
         pass
 
-
     model = MnistFullyConnected(hidden_size=args.hidden_size, hidden_num=args.hidden_num)
-
     model = utils.enable_cuda(model)
     model = utils.enable_half(model)
+    model.apply(init_weights)
 
     summary(model, input_size=(args.batch_size, 1, 784))
 
