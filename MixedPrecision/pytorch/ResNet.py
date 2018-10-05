@@ -92,13 +92,13 @@ class Bottleneck(nn.Module):
 
 
 class ResNet(nn.Module):
-    def __init__(self, block, layers, num_classes=1000, half=False):
+    def __init__(self, block, layers, num_classes=1000, _half=False):
         self.inplanes = 64
-        self.half = half
+        self._half = _half
         super(ResNet, self).__init__()
         self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3,
                                bias=False)
-        self.bn1 = BatchNorm2d(self.half)(64)
+        self.bn1 = BatchNorm2d(self.h_alf)(64)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.layer1 = self._make_layer(block, 64, layers[0])
@@ -112,7 +112,7 @@ class ResNet(nn.Module):
             if isinstance(m, nn.Conv2d):
                 n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
                 m.weight.data.normal_(0, math.sqrt(2. / n))
-            elif isinstance(m, BatchNorm2d(self.half)):
+            elif isinstance(m, BatchNorm2d(self._half)):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
 
@@ -122,14 +122,14 @@ class ResNet(nn.Module):
             downsample = nn.Sequential(
                 nn.Conv2d(self.inplanes, planes * block.expansion,
                           kernel_size=1, stride=stride, bias=False),
-                BatchNorm2d(self.half)(planes * block.expansion),
+                BatchNorm2d(self._half)(planes * block.expansion),
             )
 
         layers = []
-        layers.append(block(self.half, self.inplanes, planes, stride, downsample))
+        layers.append(block(self._half, self.inplanes, planes, stride, downsample))
         self.inplanes = planes * block.expansion
         for i in range(1, blocks):
-            layers.append(block(self.half, self.inplanes, planes))
+            layers.append(block(self._half, self.inplanes, planes))
 
         return nn.Sequential(*layers)
 
