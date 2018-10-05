@@ -84,9 +84,9 @@ def main():
         conv_num=args.conv_num,
         kernel_size=args.kernel_size)
 
+    model.apply(init_weights)
     model = utils.enable_cuda(model)
     model = utils.enable_half(model)
-    model.apply(init_weights)
 
     summary(model, input_size=(args.batch_size, 1, 784))
 
