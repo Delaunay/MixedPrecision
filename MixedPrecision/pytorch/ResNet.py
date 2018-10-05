@@ -4,8 +4,13 @@ import math
 
 
 def BatchNorm2d(half):
-    if half:
-        return torch.nn.contrib.BatchNorm2dFP16
+    # I dont know where torch.nn.contrib comes from might be a NVIDIA thingy
+    try:
+        if half:
+            return torch.nn.contrib.BatchNorm2dFP16
+    except:
+        pass
+
     return nn.BatchNorm2d
 
 
