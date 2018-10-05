@@ -118,7 +118,7 @@ def main():
     print('{:>30}: {}'.format('GPU Count', torch.cuda.device_count()))
     print('{:>30}: {}'.format('GPU Name', torch.cuda.get_device_name(current_device)))
 
-    model = utils.enable_cuda(resnet18(half=args.half))
+    model = utils.enable_cuda(resnet18(_half=args.half))
     model = utils.enable_half(model)
 
     summary(model, input_size=(3, 224, 224))
