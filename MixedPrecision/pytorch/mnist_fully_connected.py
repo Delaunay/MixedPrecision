@@ -55,8 +55,10 @@ def train(args, model, data):
     utils.enable_cuda(args.gpu)
     utils.enable_half(args.half)
 
+    model = utils.enable_cuda(model)
     model = utils.enable_half(model)
     criterion = utils.enable_half(nn.CrossEntropyLoss())
+    criterion = utils.enable_half(criterion)
     optimizer = optim.SGD(
         model.parameters(),
         lr=args.lr,
