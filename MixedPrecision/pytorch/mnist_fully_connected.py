@@ -109,7 +109,7 @@ def train(args, model, data):
 def main():
     import sys
     from MixedPrecision.tools.args import get_parser
-    from torchsummary import summary
+    from MixedPrecision.tools.utils import summary
 
     torch.manual_seed(0)
     torch.cuda.manual_seed_all(0)

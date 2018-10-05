@@ -56,7 +56,7 @@ def main():
     from MixedPrecision.pytorch.mnist_fully_connected import load_mnist
     from MixedPrecision.pytorch.mnist_fully_connected import train
     from MixedPrecision.tools.args import get_parser
-    from torchsummary import summary
+    from MixedPrecision.tools.utils import summary
 
     torch.manual_seed(0)
     torch.cuda.manual_seed_all(0)

@@ -100,11 +100,10 @@ def train(args, model, data):
         print('[{:4d}] Compute Time (avg: {:.4f}, sd: {:.4f}) Loss: {:.4f}'.format(
             1 + epoch, compute_time.avg, compute_time.sd, floss))
 
-
 def main():
     import sys
     from MixedPrecision.tools.args import get_parser
-    from torchsummary import summary
+    from MixedPrecision.tools.utils import summary
 
     torch.manual_seed(0)
     torch.cuda.manual_seed_all(0)
