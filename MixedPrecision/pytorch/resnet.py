@@ -44,9 +44,6 @@ def train(args, model, data):
     from MixedPrecision.tools.optimizer import OptimizerAdapter
     from MixedPrecision.tools.stats import StatStream
 
-    utils.enable_cuda(args.gpu)
-    utils.enable_half(args.half)
-
     model = utils.enable_cuda(model)
     model = utils.enable_half(model)
 
@@ -109,8 +106,10 @@ def main():
     torch.cuda.manual_seed_all(0)
 
     parser = get_parser()
-
     args = parser.parse_args()
+
+    utils.set_use_gpu(args.gpu)
+    utils.set_use_half(args.half)
 
     for k, v in vars(args).items():
         print('{:>30}: {}'.format(k, v))

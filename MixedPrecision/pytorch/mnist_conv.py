@@ -57,13 +57,16 @@ def main():
     from MixedPrecision.pytorch.mnist_fully_connected import train
     from MixedPrecision.tools.args import get_parser
     from MixedPrecision.tools.utils import summary
+    import MixedPrecision.tools.utils as utils
 
     torch.manual_seed(0)
     torch.cuda.manual_seed_all(0)
 
     parser = get_parser()
-
     args = parser.parse_args()
+
+    utils.set_use_gpu(args.gpu)
+    utils.set_use_half(args.half)
 
     for k, v in vars(args).items():
         print('{:>30}: {}'.format(k, v))
@@ -72,6 +75,9 @@ def main():
         hidden_size=args.hidden_size,
         conv_num=args.conv_num,
         kernel_size=args.kernel_size)
+
+    model = utils.enable_cuda(model)
+    model = utils.enable_half(model)
 
     summary(model, input_size=(args.batch_size, 1, 784))
 

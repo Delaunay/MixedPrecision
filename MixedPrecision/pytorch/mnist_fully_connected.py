@@ -52,9 +52,6 @@ def train(args, model, data):
     from MixedPrecision.tools.optimizer import OptimizerAdapter
     from MixedPrecision.tools.stats import StatStream
 
-    utils.enable_cuda(args.gpu)
-    utils.enable_half(args.half)
-
     model = utils.enable_cuda(model)
     model = utils.enable_half(model)
 
@@ -110,13 +107,16 @@ def main():
     import sys
     from MixedPrecision.tools.args import get_parser
     from MixedPrecision.tools.utils import summary
+    import MixedPrecision.tools.utils as utils
 
     torch.manual_seed(0)
     torch.cuda.manual_seed_all(0)
 
     parser = get_parser()
-
     args = parser.parse_args()
+
+    utils.set_use_gpu(args.gpu)
+    utils.set_use_half(args.half)
 
     for k, v in vars(args).items():
         print('{:>30}: {}'.format(k, v))
@@ -126,6 +126,9 @@ def main():
     print('{:>30}: {}'.format('GPU Name', torch.cuda.get_device_name(current_device)))
 
     model = MnistFullyConnected(hidden_size=args.hidden_size, hidden_num=args.hidden_num)
+
+    model = utils.enable_cuda(model)
+    model = utils.enable_half(model)
 
     summary(model, input_size=(args.batch_size, 1, 784))
 
