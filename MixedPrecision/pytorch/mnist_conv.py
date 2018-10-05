@@ -84,8 +84,9 @@ def main():
         conv_num=args.conv_num,
         kernel_size=args.kernel_size)
 
-    model.float()
-    model.apply(init_weights)
+    if not utils.use_half():
+        model.apply(init_weights)
+
     model = utils.enable_cuda(model)
     model = utils.enable_half(model)
 

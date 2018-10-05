@@ -135,8 +135,9 @@ def main():
         pass
 
     model = MnistFullyConnected(hidden_size=args.hidden_size, hidden_num=args.hidden_num)
-    model.float()
-    model.apply(init_weights)
+    if not utils.use_half():
+        model.apply(init_weights)
+
     model = utils.enable_cuda(model)
     model = utils.enable_half(model)
 
