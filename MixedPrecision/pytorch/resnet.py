@@ -7,7 +7,7 @@ import torch.optim
 import torch.utils.data
 import torch.utils.data.distributed
 
-import torchvision.models as models
+from MixedPrecision.pytorch.ResNet import resnet18
 
 import MixedPrecision.tools.utils as utils
 from PIL import Image
@@ -106,7 +106,7 @@ def main():
     for k, v in vars(args).items():
         print('{:>30}: {}'.format(k, v))
 
-    model = utils.enable_cuda(models.resnet18())
+    model = utils.enable_cuda(resnet18(half=args.half))
     model = utils.enable_half(model)
 
     summary(model, input_size=(3, 224, 224))
