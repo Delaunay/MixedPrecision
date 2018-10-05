@@ -12,7 +12,7 @@ class MnistFullyConnected(nn.Module):
         self.hidden_size = hidden_size
 
         self.input_layer = nn.Linear(784, hidden_size)
-        self.hidden_layers = [nn.Linear(hidden_size, hidden_size) for i in range(0, hidden_num)]
+        self.hidden_layers = nn.ModuleList([nn.Linear(hidden_size, hidden_size) for i in range(0, hidden_num)])
         self.output_layer = nn.Linear(hidden_size, 10)
 
     def forward(self, x):
@@ -135,9 +135,8 @@ def main():
         pass
 
     model = MnistFullyConnected(hidden_size=args.hidden_size, hidden_num=args.hidden_num)
-    if not utils.use_half():
-        model.apply(init_weights)
-
+    model.float()
+    model.apply(init_weights)
     model = utils.enable_cuda(model)
     model = utils.enable_half(model)
 
