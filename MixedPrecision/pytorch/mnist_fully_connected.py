@@ -55,8 +55,12 @@ def train(args, model, data):
     utils.enable_cuda(args.gpu)
     utils.enable_half(args.half)
 
+    model = utils.enable_cuda(model)
     model = utils.enable_half(model)
-    criterion = utils.enable_half(nn.CrossEntropyLoss())
+
+    criterion = utils.enable_cuda(nn.CrossEntropyLoss())
+    criterion = utils.enable_half(criterion)
+
     optimizer = optim.SGD(
         model.parameters(),
         lr=args.lr,
@@ -79,6 +83,9 @@ def train(args, model, data):
 
         for batch in data:
             x, y = batch
+
+            x = utils.enable_cuda(x)
+            y = utils.enable_cuda(y)
 
             x = utils.enable_half(x)
             y = utils.enable_half(y)
@@ -113,6 +120,10 @@ def main():
 
     for k, v in vars(args).items():
         print('{:>30}: {}'.format(k, v))
+
+    current_device = torch.cuda.current_device()
+    print('{:>30}: {}'.format('GPU Count', torch.cuda.device_count()))
+    print('{:>30}: {}'.format('GPU Name', torch.cuda.get_device_name(current_device)))
 
     model = MnistFullyConnected(hidden_size=args.hidden_size, hidden_num=args.hidden_num)
 
