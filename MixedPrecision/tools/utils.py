@@ -15,7 +15,12 @@ def set_use_half(val):
     global_use_half = val
 
     if val:
-        assert torch.backends.cudnn.enabled, "fp16 mode requires cudnn backend to be enabled."
+        import torch.backends.cudnn as cudnn
+        assert cudnn.CUDNN_TENSOR_OP_MATH == 1, 'fp16 mode requires to be compiled with TC enabled'
+        assert cudnn.enabled, 'fp16 mode requires cudnn backend to be enabled.'
+
+        #  CUDNN_TENSOR_OP_MATH_ALLOW_CONVERSION == 1?
+        # CUDNN_TENSOR_NCHW_VECT_C
 
 
 def use_gpu() -> bool:

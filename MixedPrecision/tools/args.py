@@ -55,4 +55,10 @@ def get_parser():
     parser.add_argument('--prof', dest='prof', type=int, default=None,
                         help='Only run N iterations for profiling.')
 
+    parser.add_argument('--permute', dest='permute', action='store_true', default=False,
+                        help='Try to permute the tensor to use NHWC instead of NCHW')
+
+    parser.add_argument('--fake256', dest='fake256', action='store_true', default=False,
+                        help='Resize Mnist to 256x256 to fake imagenet like images')
+
     return parser

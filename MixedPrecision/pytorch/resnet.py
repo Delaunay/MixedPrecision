@@ -13,7 +13,6 @@ import MixedPrecision.tools.utils as utils
 from PIL import Image
 
 
-
 def load_imagenet(args):
     import torchvision.transforms as transforms
 
@@ -65,7 +64,7 @@ def train(args, model, data):
     model.train()
 
     compute_time = StatStream(drop_first_obs=1)
-    epoch_size = 100
+    epoch_size = 10
     floss = float('inf')
 
     x, y = data

@@ -6,17 +6,19 @@ import torch.optim as optim
 
 
 class MnistFullyConnected(nn.Module):
-    def __init__(self, hidden_size=64, hidden_num=0):
+    def __init__(self, input_size=784, hidden_size=64, hidden_num=0):
         super(MnistFullyConnected, self).__init__()
+        self.input_size = input_size
         self.hidden_num = hidden_num
         self.hidden_size = hidden_size
 
-        self.input_layer = nn.Linear(784, hidden_size)
+        self.input_layer = nn.Linear(self.input_size, hidden_size)
         self.hidden_layers = nn.ModuleList([nn.Linear(hidden_size, hidden_size) for i in range(0, hidden_num)])
         self.output_layer = nn.Linear(hidden_size, 10)
 
     def forward(self, x):
-        x = x.view(-1, 784)
+        print(x.shape)
+        x = x.view(-1, self.input_size)
         x = F.relu(self.input_layer(x))
         for hiden_layer in self.hidden_layers:
             x = F.relu(hiden_layer(x))
@@ -31,15 +33,26 @@ class MnistFullyConnected(nn.Module):
         return num_features
 
 
-def load_mnist(args):
+def load_mnist(args, hwc_permute=False, fake_256=False):
     from torchvision import transforms
     from torchvision import datasets
 
+    perm = transforms.Lambda(lambda x: x)
+    fake = perm
+
+    if hwc_permute:
+        perm = transforms.Lambda(lambda x: x.permute(1, 2, 0))
+    if fake_256:
+        fake = transforms.Resize(256)
+
     train_loader = torch.utils.data.DataLoader(
+        # transform (CxHxW) => (0x1x2) we want (HxWxC) => (1x2x0)
         datasets.MNIST(args.data + '/', train=True, download=True,
                        transform=transforms.Compose([
+                           fake,
                            transforms.ToTensor(),
-                           transforms.Normalize((0.1307,), (0.3081,))
+                           transforms.Normalize((0.1307,), (0.3081,)),
+                           perm
                        ])),
         batch_size=args.batch_size, shuffle=True, num_workers=0, pin_memory=True)
     return train_loader
@@ -55,7 +68,7 @@ def train(args, model, data):
     model = utils.enable_cuda(model)
     model = utils.enable_half(model)
 
-    criterion = utils.enable_half(nn.CrossEntropyLoss())
+    criterion = utils.enable_cuda(nn.CrossEntropyLoss())
     criterion = utils.enable_half(criterion)
 
     optimizer = optim.SGD(
@@ -134,15 +147,18 @@ def main():
     except:
         pass
 
-    model = MnistFullyConnected(hidden_size=args.hidden_size, hidden_num=args.hidden_num)
+    input_size = 784
+    if args.fake256:
+        input_size = 256 * 256
+
+    model = MnistFullyConnected(input_size=input_size, hidden_size=args.hidden_size, hidden_num=args.hidden_num)
     model.float()
     model.apply(init_weights)
     model = utils.enable_cuda(model)
+    summary(model, input_size=(args.batch_size, 1, 784))
     model = utils.enable_half(model)
 
-    summary(model, input_size=(args.batch_size, 1, 784))
-
-    train(args, model, load_mnist(args))
+    train(args, model, load_mnist(args, hwc_permute=args.permute, fake_256=args.fake256))
 
     sys.exit(0)
 
