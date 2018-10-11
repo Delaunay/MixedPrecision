@@ -106,7 +106,6 @@ def train(args, model, data):
             x = utils.enable_half(x)
             out = model(x)
 
-            print(out.shape, y.shape)
             loss = criterion(out, y)
 
             floss = loss.item()

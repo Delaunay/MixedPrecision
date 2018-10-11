@@ -21,7 +21,13 @@ if __name__ == '__main__':
             'console_scripts': [
                 'mnist-conv = MixedPrecision.pytorch.mnist_conv:main',
                 'mnist-full = MixedPrecision.pytorch.mnist_fully_connected:main',
-                'resnet-18 = MixedPrecision.pytorch.resnet:main'
+                'resnet-18 = MixedPrecision.pytorch.resnet:main',
+
+                'mnist-conv-pt = MixedPrecision.pytorch.mnist_conv:main',
+                'mnist-full-pt = MixedPrecision.pytorch.mnist_fully_connected:main',
+                'resnet-18-pt = MixedPrecision.pytorch.resnet:main',
+
+                'mnist-full-tf = MixedPrecision.tensorflow.mnist_fully_connected:main'
             ]
         }
     )
