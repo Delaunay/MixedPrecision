@@ -19,7 +19,7 @@ if __name__ == '__main__':
         ],
         entry_points={
             'console_scripts': [
-                'mnist-conv = MixedPrecision.pytorch.mnist_conv.md:main',
+                'mnist-conv = MixedPrecision.pytorch.mnist_conv:main',
                 'mnist-full = MixedPrecision.pytorch.mnist_fully_connected:main',
                 'resnet-18 = MixedPrecision.pytorch.resnet:main'
             ]
