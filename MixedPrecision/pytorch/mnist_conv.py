@@ -26,12 +26,13 @@ def conv2d_output_size(conv, i: Tuple[int, int, int]) -> Tuple[int, int, int, in
             ho = v
         else:
             wo = v
+        print(s)
 
     return n, co, ho, wo
 
 
 class MnistConvolution(nn.Module):
-    def __init__(self, input_shape=(1, 28, 28), conv_num=32, kernel_size=2, explicit_permute=False):
+    def __init__(self, input_shape=(1, 28, 28), conv_num=64, conv_out=512, kernel_size=3, explicit_permute=False):
         super(MnistConvolution, self).__init__()
 
         self.input_shape = input_shape
@@ -43,32 +44,39 @@ class MnistConvolution(nn.Module):
         self.stride = 1
         self.explicit_permute = explicit_permute
 
-        self.conv_layer = nn.Conv2d(in_channels=self.input_shape[0], out_channels=conv_num, kernel_size=kernel_size,
-                                    stride=self.stride, padding=self.padding, dilation=self.dilation)
+        self.conv1 = nn.Conv2d(in_channels=self.input_shape[0], out_channels=conv_num, kernel_size=kernel_size,
+                               stride=self.stride, padding=self.padding, dilation=self.dilation)
 
-        size = conv2d_output_size(self.conv_layer, self.input_shape)
+        self.conv2 = nn.Conv2d(in_channels=conv_num, out_channels=conv_out, kernel_size=kernel_size,
+                               stride=self.stride, padding=self.padding, dilation=self.dilation)
+
+        size = conv2d_output_size(self.conv2, self.input_shape)
+        print(size)
         self.conv_output_size = size[1] * size[2] * size[3]
-
+        print(self.conv_output_size)
         self.output_layer = nn.Linear(self.conv_output_size, 10)
 
     def forward(self, x):
         if self.explicit_permute:
             x = x.permute(0, 3, 1, 2)
 
-        x = self.conv_layer(x)
+        #print('---')
+        #print(x.shape)      # torch.Size([256, 1, 28, 28])
+        x = self.conv1(x)
+        #print(x.shape)      # torch.Size([256, 32, 14, 14])
+        x = self.conv2(x)
+        #print(x.shape)      # torch.Size([256, 512, 7, 7])
 
-        x = x.view(-1, self.conv_output_size)
+        x = x.view(-1, self.conv_output_size) # torch.Size([64, 100352])
+        #print(x.shape)
 
         x = F.relu(self.output_layer(x))
-        x = F.softmax(x, dim=1)
-        return x
+        #print(x.shape)
 
-    def num_flat_features(self, x):
-        size = x.size()[1:]
-        num_features = 1
-        for s in size:
-            num_features *= 8
-        return num_features
+        x = F.softmax(x, dim=1)
+        #rint(x.shape)
+        #print('-----')
+        return x
 
 
 def main():
@@ -112,7 +120,7 @@ def main():
     model.float()
     model.apply(init_weights)
     model = utils.enable_cuda(model)
-    summary(model, input_size=(args.batch_size, 784, 1))
+    summary(model, input_size=(shape[0], shape[1], shape[2]))
     model = utils.enable_half(model)
 
     train(args, model, load_mnist(args, hwc_permute=args.permute, fake_data=args.fake, shape=shape))

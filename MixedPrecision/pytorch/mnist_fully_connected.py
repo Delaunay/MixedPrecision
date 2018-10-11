@@ -54,7 +54,7 @@ def load_mnist(args, fake_data=False, hwc_permute=False, shape=(1, 28, 28)):
     dataset = None
 
     if fake_data:
-        dataset = fakeit('pytorch', args.batch_size, shape, 10, trans)
+        dataset = fakeit('pytorch', args.batch_size * 10, shape, 10, trans)
     else:
         dataset = datasets.MNIST(args.data + '/', train=True, download=True, transform=trans)
 
@@ -104,8 +104,9 @@ def train(args, model, data):
             y = utils.enable_cuda(y)
 
             x = utils.enable_half(x)
-
             out = model(x)
+
+            print(out.shape, y.shape)
             loss = criterion(out, y)
 
             floss = loss.item()
