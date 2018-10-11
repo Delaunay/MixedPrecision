@@ -59,7 +59,7 @@ def load_mnist(args, fake_data=False, hwc_permute=False, shape=(1, 28, 28)):
         dataset = datasets.MNIST(args.data + '/', train=True, download=True, transform=trans)
 
     train_loader = torch.utils.data.DataLoader(
-        dataset, batch_size=args.batch_size, shuffle=True, num_workers=0, pin_memory=True)
+        dataset, batch_size=args.batch_size, shuffle=True, num_workers=0)
 
     return train_loader
 
