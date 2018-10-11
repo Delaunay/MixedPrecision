@@ -12,6 +12,7 @@ if __name__ == '__main__':
         packages=[
             'MixedPrecision',
             'MixedPrecision.pytorch',
+            'MixedPrecision.tensorflow',
             'MixedPrecision.tools'],
         install_requires=[
             'torch',
