@@ -31,14 +31,10 @@ def conv2d_output_size(conv, i: Tuple[int, int, int]) -> Tuple[int, int, int, in
 
 
 class MnistConvolution(nn.Module):
-    def __init__(self, input_size=28,hidden_size=64, conv_num=32, kernel_size=2, explicit_permute=False):
+    def __init__(self, input_shape=(1, 28, 28), conv_num=32, kernel_size=2, explicit_permute=False):
         super(MnistConvolution, self).__init__()
 
-        # self.hidden_size_sqrt = int(math.sqrt(hidden_size))
-        # self.hidden_size = int(self.hidden_size_sqrt ** 2)
-        # self.input_layer = nn.Linear(784, self.hidden_size)
-
-        self.input_size = input_size
+        self.input_shape = input_shape
         self.conv_num = conv_num
         self.kernel_size = kernel_size
 
@@ -47,10 +43,10 @@ class MnistConvolution(nn.Module):
         self.stride = 1
         self.explicit_permute = explicit_permute
 
-        self.conv_layer = nn.Conv2d(in_channels=1, out_channels=conv_num, kernel_size=kernel_size,
+        self.conv_layer = nn.Conv2d(in_channels=self.input_shape[0], out_channels=conv_num, kernel_size=kernel_size,
                                     stride=self.stride, padding=self.padding, dilation=self.dilation)
 
-        size = conv2d_output_size(self.conv_layer, (1, self.input_size, self.input_size))
+        size = conv2d_output_size(self.conv_layer, self.input_shape)
         self.conv_output_size = size[1] * size[2] * size[3]
 
         self.output_layer = nn.Linear(self.conv_output_size, 10)
@@ -93,9 +89,9 @@ def main():
     utils.set_use_gpu(args.gpu)
     utils.set_use_half(args.half)
 
-    input_size = 28
-    if args.fake256:
-        input_size = 256
+    shape = (1, 28, 28)
+    if args.fake:
+        shape = args.shape
 
     for k, v in vars(args).items():
         print('{:>30}: {}'.format(k, v))
@@ -108,8 +104,7 @@ def main():
         pass
 
     model = MnistConvolution(
-        input_size=input_size,
-        hidden_size=args.hidden_size,
+        input_shape=shape,
         conv_num=args.conv_num,
         kernel_size=args.kernel_size,
         explicit_permute=args.permute)
@@ -120,7 +115,7 @@ def main():
     summary(model, input_size=(args.batch_size, 784, 1))
     model = utils.enable_half(model)
 
-    train(args, model, load_mnist(args, hwc_permute=args.permute, fake_256=args.fake256))
+    train(args, model, load_mnist(args, hwc_permute=args.permute, fake_data=args.fake, shape=shape))
 
     sys.exit(0)
 
