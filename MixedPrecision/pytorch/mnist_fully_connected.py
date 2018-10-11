@@ -4,11 +4,16 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
+from torchvision import transforms
+from torchvision import datasets
+
+from MixedPrecision.tools.fakeit import fakeit
+
 
 class MnistFullyConnected(nn.Module):
-    def __init__(self, input_size=784, hidden_size=64, hidden_num=0):
+    def __init__(self, input_shape=(1, 28, 28), hidden_size=64, hidden_num=0):
         super(MnistFullyConnected, self).__init__()
-        self.input_size = input_size
+        self.input_shape = input_shape
         self.hidden_num = hidden_num
         self.hidden_size = hidden_size
 
@@ -16,45 +21,46 @@ class MnistFullyConnected(nn.Module):
         self.hidden_layers = nn.ModuleList([nn.Linear(hidden_size, hidden_size) for i in range(0, hidden_num)])
         self.output_layer = nn.Linear(hidden_size, 10)
 
+    @property
+    def input_size(self):
+        return self.input_shape[0] * self.input_shape[1] * self.input_shape[2]
+
     def forward(self, x):
-        print(x.shape)
         x = x.view(-1, self.input_size)
         x = F.relu(self.input_layer(x))
-        for hiden_layer in self.hidden_layers:
-            x = F.relu(hiden_layer(x))
+
+        for hidden_layer in self.hidden_layers:
+            x = F.relu(hidden_layer(x))
+
         x = F.softmax(self.output_layer(x), dim=1)
         return x
 
-    def num_flat_features(self, x):
-        size = x.size()[1:]
-        num_features = 1
-        for s in size:
-            num_features *= 8
-        return num_features
 
-
-def load_mnist(args, hwc_permute=False, fake_256=False):
-    from torchvision import transforms
-    from torchvision import datasets
+def load_mnist(args, fake_data=False, hwc_permute=False, shape=(1, 28, 28)):
+    import MixedPrecision.tools.utils as utils
 
     perm = transforms.Lambda(lambda x: x)
-    fake = perm
 
     if hwc_permute:
         perm = transforms.Lambda(lambda x: x.permute(1, 2, 0))
-    if fake_256:
-        fake = transforms.Resize(256)
+
+    trans = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.1307,), (0.3081,)),
+        perm,
+        transforms.Lambda(lambda x: utils.enable_half(utils.enable_cuda(x)))
+    ])
+
+    dataset = None
+
+    if fake_data:
+        dataset = fakeit('pytorch', args.batch_size, shape, 10, trans)
+    else:
+        dataset = datasets.MNIST(args.data + '/', train=True, download=True, transform=trans),
 
     train_loader = torch.utils.data.DataLoader(
-        # transform (CxHxW) => (0x1x2) we want (HxWxC) => (1x2x0)
-        datasets.MNIST(args.data + '/', train=True, download=True,
-                       transform=transforms.Compose([
-                           fake,
-                           transforms.ToTensor(),
-                           transforms.Normalize((0.1307,), (0.3081,)),
-                           perm
-                       ])),
-        batch_size=args.batch_size, shuffle=True, num_workers=0, pin_memory=True)
+        dataset, batch_size=args.batch_size, shuffle=True, num_workers=0, pin_memory=True)
+
     return train_loader
 
 
@@ -98,7 +104,6 @@ def train(args, model, data):
             y = utils.enable_cuda(y)
 
             x = utils.enable_half(x)
-            y = utils.enable_half(y)
 
             out = model(x)
             loss = criterion(out, y)
@@ -137,6 +142,10 @@ def main():
     utils.set_use_gpu(args.gpu)
     utils.set_use_half(args.half)
 
+    shape = (1, 28, 28)
+    if args.fake:
+        shape = args.shape
+
     for k, v in vars(args).items():
         print('{:>30}: {}'.format(k, v))
 
@@ -147,18 +156,14 @@ def main():
     except:
         pass
 
-    input_size = 784
-    if args.fake256:
-        input_size = 256 * 256
-
-    model = MnistFullyConnected(input_size=input_size, hidden_size=args.hidden_size, hidden_num=args.hidden_num)
+    model = MnistFullyConnected(input_shape=shape, hidden_size=args.hidden_size, hidden_num=args.hidden_num)
     model.float()
     model.apply(init_weights)
     model = utils.enable_cuda(model)
-    summary(model, input_size=(args.batch_size, 1, 784))
+    summary(model, input_size=(args.batch_size, 1, 28, 28))
     model = utils.enable_half(model)
 
-    train(args, model, load_mnist(args, hwc_permute=args.permute, fake_256=args.fake256))
+    train(args, model, load_mnist(args, hwc_permute=args.permute, fake_data=args.fake, shape=shape))
 
     sys.exit(0)
 

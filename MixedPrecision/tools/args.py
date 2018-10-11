@@ -58,7 +58,10 @@ def get_parser():
     parser.add_argument('--permute', dest='permute', action='store_true', default=False,
                         help='Try to permute the tensor to use NHWC instead of NCHW')
 
-    parser.add_argument('--fake256', dest='fake256', action='store_true', default=False,
-                        help='Resize Mnist to 256x256 to fake imagenet like images')
+    parser.add_argument('--fake', dest='fake', action='store_true', default=False,
+                        help='Generate Random Images')
+
+    parser.add_argument('--shape', dest='shape', type=int, nargs='*', default=[1, 28, 28],
+                        help='Shape of the randomly generated images')
 
     return parser
