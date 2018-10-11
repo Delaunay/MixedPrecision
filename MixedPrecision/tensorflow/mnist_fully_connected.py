@@ -103,7 +103,7 @@ def train(args, dataset):
     # ------------------------------------------------------------------------------------------------------------------
 
     # Run training
-    sess = tf.Session()
+    sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
     sess.run(init_op)
 
     compute_time = StatStream(1)
