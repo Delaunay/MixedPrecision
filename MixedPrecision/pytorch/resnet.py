@@ -135,6 +135,7 @@ def generic_main(make_model):
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
             normalize,
+            transforms.Lambda(lambda x: utils.enable_cuda(utils.enable_half(x)))
         ])
 
         dataset = fakeit('pytorch', args.batch_size * 10, (3, 224, 244), 1000, transforms)
