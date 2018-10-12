@@ -31,12 +31,12 @@ The expected speed up gain should be around 2x according to [this][1]
 * Average Speed after 360 batch of 128 images, higher is better
 
       
-|   Speed   |  Slurm  | 16/32 | Container | 16/3 | Container/Slurm |
-|----------:|--------:|------:|----------:|-----:|----------------:|  
-|Resnet18-32|    192  |       |       771 |      |            4.02 |
-|Resnet18-16|    194  |  1.01 |       805 | 1.04 |            4.15 |
-|Resnet50-32|    175  |       |       333 |      |            1.90 |
-|Resnet50-16|    181  |  1.03 |       672 | 2.02 |            3.71 |
+|   Speed   |  Slurm  | 16/32 | Container | 16/32 | Container/Slurm |
+|----------:|--------:|------:|----------:|------:|----------------:|  
+|Resnet18-32|    192  |       |       771 |       |            4.02 |
+|Resnet18-16|    194  |  1.01 |       805 |  1.04 |            4.15 |
+|Resnet50-32|    175  |       |       333 |       |            1.90 |
+|Resnet50-16|    181  |  1.03 |       672 |  2.02 |            3.71 |
 
 
 NB: The speed during the training had a lot of variance; which means we might be able to get better speedup in reality 

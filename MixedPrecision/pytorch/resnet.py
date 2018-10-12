@@ -69,15 +69,14 @@ def train(args, model, data):
     epoch_size = 10
     floss = float('inf')
 
-    x, y = data
-
     for epoch in range(0, args.epochs):
         compute_start = time.time()
 
-        for i in range(0, epoch_size):
+        for x, y in data:
             # compute output
             output = model(x)
             loss = criterion(output, y)
+
             floss = loss.item()
 
             # compute gradient and do SGD step
@@ -96,6 +95,7 @@ def generic_main(make_model):
     import sys
     from MixedPrecision.tools.args import get_parser
     from MixedPrecision.tools.utils import summary
+    from MixedPrecision.tools.fakeit import fakeit
 
     torch.manual_seed(0)
     torch.cuda.manual_seed_all(0)
@@ -121,7 +121,29 @@ def generic_main(make_model):
 
     summary(model, input_size=(3, 224, 224))
 
-    train(args, model, load_imagenet(args))
+    data = None
+    if args.fake:
+        from torchvision import transforms
+
+        normalize = transforms.Normalize(
+            mean=[0.485, 0.456, 0.406],
+            std=[0.229, 0.224, 0.225]
+        )
+
+        transforms = transforms.Compose([
+            transforms.RandomResizedCrop(224),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            normalize,
+        ])
+
+        dataset = fakeit('pytorch', args.batch_size * 10, (3, 224, 244), 1000, transforms)
+
+        data = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size, shuffle=None)
+    else:
+        data = load_imagenet(args)
+
+    train(args, model, data)
 
     sys.exit(0)
 
