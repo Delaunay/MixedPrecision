@@ -30,9 +30,11 @@ def load_imagenet(args):
 
     img = Image.open(args.data + '/train/n01440764/n01440764_8082.JPEG')
     data = utils.enable_cuda(torch.stack([utils.enable_half(transforms(img)) for i in range(0, args.batch_size)]))
+    data = utils.enable_half(utils.enable_cuda(data))
 
     target = utils.enable_cuda(torch.tensor([i for i in range(0, args.batch_size)])).long()
     target = target[torch.randperm(args.batch_size)]
+    target = utils.enable_half(utils.enable_cuda(target))
     return data, target
 
 
@@ -73,13 +75,6 @@ def train(args, model, data):
         compute_start = time.time()
 
         for i in range(0, epoch_size):
-            # measure data loading time
-            x = utils.enable_cuda(x)
-            y = utils.enable_cuda(y)
-
-            x = utils.enable_half(x)
-            y = utils.enable_half(y)
-
             # compute output
             output = model(x)
             loss = criterion(output, y)
