@@ -1,15 +1,15 @@
 import torch
-from torch.autograd import Variable
 import torch.nn as nn
 import torch.nn.parallel
 
 import torch.optim
+import torchvision.models.resnet as resnet
+
 import torch.utils.data
 import torch.utils.data.distributed
 
-from MixedPrecision.pytorch.ResNet import resnet18
-
 import MixedPrecision.tools.utils as utils
+
 from PIL import Image
 
 
@@ -96,7 +96,8 @@ def train(args, model, data):
         print('[{:4d}] Compute Time (avg: {:.4f}, sd: {:.4f}) Loss: {:.4f}'.format(
             1 + epoch, compute_time.avg, compute_time.sd, floss))
 
-def main():
+
+def generic_main(make_model):
     import sys
     from MixedPrecision.tools.args import get_parser
     from MixedPrecision.tools.utils import summary
@@ -120,7 +121,7 @@ def main():
     except:
         pass
 
-    model = utils.enable_cuda(resnet18(_half=args.half))
+    model = utils.enable_cuda(make_model())
     model = utils.enable_half(model)
 
     summary(model, input_size=(3, 224, 224))
@@ -130,5 +131,13 @@ def main():
     sys.exit(0)
 
 
+def resnet18_main():
+    return generic_main(resnet.resnet18)
+
+
+def resnet50_main():
+    return generic_main(resnet.resnet50)
+
+
 if __name__ == '__main__':
-    main()
+    resnet50_main()

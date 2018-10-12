@@ -9,22 +9,80 @@ from MixedPrecision.tools.tensorflow import gradients_with_loss_scaling
 from MixedPrecision.tools.tensorflow import float32_variable_storage_getter
 
 
-def create_simple_model(nbatch, nin, nout, nclass, dtype):
+"""
+self.conv1 = nn.Conv2d(in_channels=self.input_shape[0], out_channels=conv_num, kernel_size=kernel_size,
+                       stride=self.stride, padding=self.padding, dilation=self.dilation)
+
+self.conv2 = nn.Conv2d(in_channels=conv_num, out_channels=conv_out, kernel_size=kernel_size,
+                       stride=self.stride, padding=self.padding, dilation=self.dilation)
+
+size = conv2d_output_size(self.conv2, self.input_shape)
+print(size)
+self.conv_output_size = size[1] * size[2] * size[3]
+print(self.conv_output_size)
+self.output_layer = nn.Linear(self.conv_output_size, 10)
+"""
+
+def create_simple_model_2(nbatch, shape, conv_num=64, conv_out=512, nclass=10, dtype=tf.float32):
     """
         A simple softmax model.
     """
-
-    data = tf.placeholder(dtype, shape=(nbatch, nin))
+    c, h, w = shape
+    data = tf.placeholder(dtype, shape=(nbatch, h, w, c))
 
     with tf.name_scope('input_layer'):
-        weights = tf.get_variable('iweights', (nin, nout), dtype)
-        biases  = tf.get_variable('ibiases',        nout,  dtype, initializer=tf.zeros_initializer())
-        hidden  = tf.nn.relu(tf.matmul(data, weights) + biases)
+
+        conv1 = tf.layers.conv2d(
+            inputs=data,
+            filters=conv_num,
+            kernel_size=[3, 3],
+            padding='SAME'
+        )
+
+    with tf.name_scope('hidden_layer'):
+        conv2 = tf.layers.conv2d(
+            inputs=conv1,
+            filters=conv_out,
+            kernel_size=[3, 3],
+            padding='SAME'
+        )
+        flat = tf.layers.Flatten()(conv2)
 
     with tf.name_scope('output_layer'):
-        weights = tf.get_variable('oweights', (nout, nclass), dtype)
-        biases  = tf.get_variable('obiases',         nclass,  dtype, initializer=tf.zeros_initializer())
-        logits  = tf.matmul(hidden, weights) + biases
+        logits = tf.layers.dense(inputs=flat, units=10, use_bias=True)
+
+    target  = tf.placeholder(tf.float32, shape=(nbatch, nclass))
+
+    # Note: The softmax should be computed in float32 precision
+    loss    = tf.losses.softmax_cross_entropy(target, tf.cast(logits, tf.float32))
+
+    return data, target, loss
+
+
+def create_simple_model(nbatch, shape, conv_num=64, conv_out=512, nclass=10, dtype=tf.float32):
+    """
+        A simple softmax model.
+    """
+    c, h, w = shape
+    data = tf.placeholder(dtype, shape=(nbatch, h, w, c))
+
+    with tf.name_scope('input_layer'):
+        kernel = tf.get_variable('ikernel', filters=conv_num, shape=[3, 3, 3])
+        conv = tf.nn.conv2d(data, kernel, strides=[1, 1, 1, 1], use_cudnn_on_gpu=True, data_format='NHWC', padding='SAME')
+        biases = tf.get_variable('ibiases', [conv_num], tf.constant_initializer(0.0))
+        ilayer = tf.nn.bias_add(conv, biases)
+
+    with tf.name_scope('hidden_layer'):
+        conv2 = tf.layers.conv2d(
+            inputs=conv1,
+            filters=conv_out,
+            kernel_size=[3, 3],
+            padding='SAME'
+        )
+        flat = tf.layers.Flatten()(conv2)
+
+    with tf.name_scope('output_layer'):
+        logits = tf.layers.dense(inputs=flat, units=10, use_bias=True)
 
     target  = tf.placeholder(tf.float32, shape=(nbatch, nclass))
 
@@ -38,7 +96,7 @@ def train(args, dataset):
     shape = args.shape
     nbatch = args.batch_size
     nin = shape[0] * shape[1] * shape[2]
-    nout = args.hidden_size
+    conv_num = args.conv_num
     learning_rate = args.lr
     momentum = args.momentum
     loss_scale = args.static_loss_scale
@@ -56,7 +114,7 @@ def train(args, dataset):
              # Note: This forces trainable variables to be stored as float32
              'fp32_storage', custom_getter=float32_variable_storage_getter):
 
-        data, target, loss = create_simple_model(nbatch, nin, nout, 10, dtype)
+        data, target, loss = create_simple_model(nbatch, shape, conv_num, 512, 10, dtype)
 
         variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
 
@@ -92,9 +150,9 @@ def train(args, dataset):
             1 + epoch, compute_time.avg, compute_time.sd, floss))
 
 
-def load_data(args, nin):
+def load_data(args, shape):
     def generate_x():
-        return np.random.normal(size=(args.batch_size, nin)).astype(np.float16)
+        return np.random.normal(size=(args.batch_size, shape[1], shape[2], shape[0])).astype(np.float16)
 
     def generate_y():
         return np.zeros((args.batch_size, 10), dtype=np.float32)
@@ -114,7 +172,7 @@ def main():
     shape = args.shape
     nin = shape[0] * shape[1] * shape[2]
 
-    train(args, load_data(args, nin))
+    train(args, load_data(args, args.shape))
 
 
 if __name__ == '__main__':

@@ -64,4 +64,9 @@ def get_parser():
     parser.add_argument('--shape', dest='shape', type=int, nargs='*', default=[1, 28, 28],
                         help='Shape of the randomly generated images')
 
+    parser.add_argument('--log_device_placement', action='store_true', default=False,
+                        help='Make Tensorflow log device placement')
+
+
+
     return parser
