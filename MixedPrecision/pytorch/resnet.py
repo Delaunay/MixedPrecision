@@ -72,7 +72,9 @@ def train(args, model, data):
     for epoch in range(0, args.epochs):
         compute_start = time.time()
 
-        for x, y in data:
+        x, y = data.next()
+
+        while x is not None:
             # compute output
             output = model(x)
             loss = criterion(output, y)
@@ -83,6 +85,8 @@ def train(args, model, data):
             optimizer.zero_grad()
             optimizer.backward(loss)
             optimizer.step()
+
+            x, y = data.next()
 
         compute_end = time.time()
         compute_time.update(compute_end - compute_start)
@@ -96,6 +100,7 @@ def generic_main(make_model):
     from MixedPrecision.tools.args import get_parser
     from MixedPrecision.tools.utils import summary
     from MixedPrecision.tools.fakeit import fakeit
+    from MixedPrecision.tools.prefetcher import DataPreFetcher
 
     torch.manual_seed(0)
     torch.cuda.manual_seed_all(0)
@@ -136,15 +141,23 @@ def generic_main(make_model):
 
         transforms = transforms.Compose([
             transforms.RandomResizedCrop(224),
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-            normalize,
-            transforms.Lambda(lambda x: utils.enable_cuda(utils.enable_half(x)))
+            transforms.RandomHorizontalFlip()
+            #transforms.ToTensor(),
+            #normalize,
+            #transforms.Lambda(lambda x: utils.enable_cuda(utils.enable_half(x)))
         ])
 
         dataset = fakeit('pytorch', args.batch_size * 10, (3, 224, 244), 1000, transforms, target_transform)
 
-        data = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size, shuffle=None)
+        data = torch.utils.data.DataLoader(
+            dataset, batch_size=args.batch_size, shuffle=None, collate_fn=utils.fast_collate
+        )
+
+        data = DataPreFetcher(
+            data,
+            mean=utils.enable_half(torch.tensor([0.485 * 255, 0.456 * 255, 0.406 * 255])).view(1, 3, 1, 1),
+            std=utils.enable_half(torch.tensor([0.229 * 255, 0.224 * 255, 0.225 * 255])).view(1, 3, 1, 1)
+        )
     else:
         data = load_imagenet(args)
 
