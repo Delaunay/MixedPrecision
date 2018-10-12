@@ -130,6 +130,10 @@ def generic_main(make_model):
             std=[0.229, 0.224, 0.225]
         )
 
+        target_transform = transforms.Compose([
+            transforms.Lambda(lambda x: utils.enable_cuda(x.long()))
+        ])
+
         transforms = transforms.Compose([
             transforms.RandomResizedCrop(224),
             transforms.RandomHorizontalFlip(),
@@ -138,7 +142,7 @@ def generic_main(make_model):
             transforms.Lambda(lambda x: utils.enable_cuda(utils.enable_half(x)))
         ])
 
-        dataset = fakeit('pytorch', args.batch_size * 10, (3, 224, 244), 1000, transforms)
+        dataset = fakeit('pytorch', args.batch_size * 10, (3, 224, 244), 1000, transforms, target_transform)
 
         data = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size, shuffle=None)
     else:
