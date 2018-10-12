@@ -66,20 +66,22 @@ def train(args, model, dataset):
     )
     model.train()
 
-    compute_time = StatStream(drop_first_obs=1)
+    epoch_compute = StatStream(drop_first_obs=1)
+    batch_compute = StatStream(drop_first_obs=10)
     floss = float('inf')
 
     mean = utils.enable_half(torch.tensor([0.485 * 255, 0.456 * 255, 0.406 * 255]).float()).view(1, 3, 1, 1)
     std = utils.enable_half(torch.tensor([0.229 * 255, 0.224 * 255, 0.225 * 255]).float()).view(1, 3, 1, 1)
 
     for epoch in range(0, args.epochs):
-        compute_start = time.time()
+        epoch_compute_start = time.time()
 
         data = DataPreFetcher(dataset, mean=mean, std=std)
         x, y = data.next()
 
         while x is not None:
             # compute output
+            batch_compute_start = time.time()
             output = model(x)
             loss = criterion(output, y)
             floss = loss.item()
@@ -89,13 +91,17 @@ def train(args, model, dataset):
             optimizer.backward(loss)
             optimizer.step()
 
+            torch.cuda.synchronize()
+            batch_compute_end = time.time()
+            batch_compute += batch_compute_end - batch_compute_start
+
             x, y = data.next()
 
-        compute_end = time.time()
-        compute_time.update(compute_end - compute_start)
+        epoch_compute_end = time.time()
+        epoch_compute.update(epoch_compute_end - epoch_compute_start)
 
-        print('[{:4d}] Compute Time (avg: {:.4f}, sd: {:.4f}) Loss: {:.4f}'.format(
-            1 + epoch, compute_time.avg, compute_time.sd, floss))
+        print('[{:4d}] Epoch Time (avg: {:.4f}, sd: {:.4f}) Batch Time (avg: {:.4f}, sd: {:.4f}) Loss: {:.4f}'.format(
+            1 + epoch, epoch_compute.avg, epoch_compute.sd, batch_compute.avg, batch_compute.sd, floss))
 
 
 def generic_main(make_model):
