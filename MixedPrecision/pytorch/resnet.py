@@ -58,7 +58,7 @@ def load_imagenet(args):
         data_transforms)
 
     return torch.utils.data.DataLoader(
-        train_dataset, batch_size=args.batch_size, shuffle=False,
+        train_dataset, batch_size=args.batch_size, shuffle=None,
         num_workers=args.workers, pin_memory=True, collate_fn=utils.fast_collate)
 
 
@@ -67,7 +67,6 @@ def fake_imagenet(args):
     global data_transforms
 
     print('Faking Imagenet data')
-
     target_transform = transforms.Compose([
         transforms.Lambda(lambda x: utils.enable_cuda(x.long()))
     ])
@@ -75,7 +74,8 @@ def fake_imagenet(args):
     dataset = fakeit('pytorch', args.batch_size * 10, (3, 224, 244), 1000, data_transforms, target_transform)
 
     return torch.utils.data.DataLoader(
-        dataset, batch_size=args.batch_size, shuffle=None, collate_fn=utils.fast_collate
+        dataset, batch_size=args.batch_size, pin_memory=True,
+        num_workers=args.workers, shuffle=None, collate_fn=utils.fast_collate
     )
 
 
