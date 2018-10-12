@@ -38,7 +38,7 @@ def load_imagenet(args):
     return data, target
 
 
-def train(args, model, data):
+def train(args, model, dataset):
     import time
 
     import MixedPrecision.tools.utils as utils
@@ -74,8 +74,8 @@ def train(args, model, data):
 
     for epoch in range(0, args.epochs):
         compute_start = time.time()
-        data = DataPreFetcher(data, mean=mean, std=std)
 
+        data = DataPreFetcher(dataset, mean=mean, std=std)
         x, y = data.next()
 
         while x is not None:
