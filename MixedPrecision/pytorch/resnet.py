@@ -50,7 +50,8 @@ def train(args, model, dataset):
     model = utils.enable_half(model)
 
     criterion = utils.enable_cuda(nn.CrossEntropyLoss())
-    criterion = utils.enable_half(criterion)
+    # No Half precision for the criterion
+    # criterion = utils.enable_half(criterion)
 
     optimizer = torch.optim.SGD(
         model.parameters(),
@@ -109,6 +110,7 @@ def generic_main(make_model):
     from MixedPrecision.tools.args import get_parser
     from MixedPrecision.tools.utils import summary
     from MixedPrecision.tools.fakeit import fakeit
+    from apex.fp16_utils import network_to_half
 
     torch.manual_seed(0)
     torch.cuda.manual_seed_all(0)
@@ -130,7 +132,11 @@ def generic_main(make_model):
         pass
 
     model = utils.enable_cuda(make_model())
-    model = utils.enable_half(model)
+
+    if utils.use_half():
+        model = network_to_half(model)
+    else:
+        model = utils.enable_half(model)
 
     summary(model, input_size=(3, 224, 224))
 
