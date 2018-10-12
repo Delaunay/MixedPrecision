@@ -39,14 +39,23 @@ def load_imagenet(args):
     target = utils.enable_half(utils.enable_cuda(target))
     return data, target*/"""
 
+data_transforms = transforms.Compose([
+    transforms.RandomResizedCrop(224),
+    transforms.RandomHorizontalFlip()
+    # transforms.ToTensor(),
+    # normalize,
+    # transforms.Lambda(lambda x: utils.enable_cuda(utils.enable_half(x)))
+])
+
 
 def load_imagenet(args):
+    global data_transforms
+
+    print('Loading imagenet from {}'.format(args.data))
+
     train_dataset = datasets.ImageFolder(
-        args.data,
-        transforms.Compose([
-            transforms.RandomResizedCrop(224),      # multiple of 8
-            transforms.RandomHorizontalFlip(),
-        ]))
+        args.data + '/train/',
+        data_transforms)
 
     return torch.utils.data.DataLoader(
         train_dataset, batch_size=args.batch_size, shuffle=False,
@@ -55,21 +64,15 @@ def load_imagenet(args):
 
 def fake_imagenet(args):
     from MixedPrecision.tools.fakeit import fakeit
-    from torchvision import transforms
+    global data_transforms
+
+    print('Faking Imagenet data')
 
     target_transform = transforms.Compose([
         transforms.Lambda(lambda x: utils.enable_cuda(x.long()))
     ])
 
-    transforms = transforms.Compose([
-        transforms.RandomResizedCrop(224),
-        transforms.RandomHorizontalFlip()
-        # transforms.ToTensor(),
-        # normalize,
-        # transforms.Lambda(lambda x: utils.enable_cuda(utils.enable_half(x)))
-    ])
-
-    dataset = fakeit('pytorch', args.batch_size * 10, (3, 224, 244), 1000, transforms, target_transform)
+    dataset = fakeit('pytorch', args.batch_size * 10, (3, 224, 244), 1000, data_transforms, target_transform)
 
     return torch.utils.data.DataLoader(
         dataset, batch_size=args.batch_size, shuffle=None, collate_fn=utils.fast_collate
