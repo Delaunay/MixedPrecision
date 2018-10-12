@@ -155,8 +155,8 @@ def generic_main(make_model):
 
         data = DataPreFetcher(
             data,
-            mean=utils.enable_half(torch.tensor([0.485 * 255, 0.456 * 255, 0.406 * 255])).view(1, 3, 1, 1),
-            std=utils.enable_half(torch.tensor([0.229 * 255, 0.224 * 255, 0.225 * 255])).view(1, 3, 1, 1)
+            mean=utils.enable_half(torch.tensor([0.485 * 255, 0.456 * 255, 0.406 * 255]).float()).view(1, 3, 1, 1),
+            std=utils.enable_half(torch.tensor([0.229 * 255, 0.224 * 255, 0.225 * 255]).float()).view(1, 3, 1, 1)
         )
     else:
         data = load_imagenet(args)
