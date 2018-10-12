@@ -35,7 +35,7 @@ class DataPreFetcher:
             self.next_target = self.next_target.cuda(async=True)
 
             if utils.use_half():
-                self.next_input = utils.enable_half(self.next_input)
+                self.next_input = self.next_input.half()
             else:
                 self.next_input = self.next_input.float()
 

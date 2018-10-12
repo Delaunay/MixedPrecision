@@ -44,6 +44,7 @@ def train(args, model, data):
     import MixedPrecision.tools.utils as utils
     from MixedPrecision.tools.optimizer import OptimizerAdapter
     from MixedPrecision.tools.stats import StatStream
+    from MixedPrecision.tools.prefetcher import DataPreFetcher
 
     model = utils.enable_cuda(model)
     model = utils.enable_half(model)
@@ -66,11 +67,14 @@ def train(args, model, data):
     model.train()
 
     compute_time = StatStream(drop_first_obs=1)
-    epoch_size = 10
     floss = float('inf')
+
+    mean = utils.enable_half(torch.tensor([0.485 * 255, 0.456 * 255, 0.406 * 255]).float()).view(1, 3, 1, 1)
+    std = utils.enable_half(torch.tensor([0.229 * 255, 0.224 * 255, 0.225 * 255]).float()).view(1, 3, 1, 1)
 
     for epoch in range(0, args.epochs):
         compute_start = time.time()
+        data = DataPreFetcher(data, mean=mean, std=std)
 
         x, y = data.next()
 
@@ -78,7 +82,6 @@ def train(args, model, data):
             # compute output
             output = model(x)
             loss = criterion(output, y)
-
             floss = loss.item()
 
             # compute gradient and do SGD step
@@ -100,7 +103,6 @@ def generic_main(make_model):
     from MixedPrecision.tools.args import get_parser
     from MixedPrecision.tools.utils import summary
     from MixedPrecision.tools.fakeit import fakeit
-    from MixedPrecision.tools.prefetcher import DataPreFetcher
 
     torch.manual_seed(0)
     torch.cuda.manual_seed_all(0)
@@ -151,12 +153,6 @@ def generic_main(make_model):
 
         data = torch.utils.data.DataLoader(
             dataset, batch_size=args.batch_size, shuffle=None, collate_fn=utils.fast_collate
-        )
-
-        data = DataPreFetcher(
-            data,
-            mean=utils.enable_half(torch.tensor([0.485 * 255, 0.456 * 255, 0.406 * 255]).float()).view(1, 3, 1, 1),
-            std=utils.enable_half(torch.tensor([0.229 * 255, 0.224 * 255, 0.225 * 255]).float()).view(1, 3, 1, 1)
         )
     else:
         data = load_imagenet(args)
