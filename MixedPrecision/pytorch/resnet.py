@@ -168,15 +168,16 @@ def train(args, model, dataset):
 
                 print('[{:4d}][{:4d}] '
                       'Batch Time (avg: {batch_compute.avg:.4f}, sd: {batch_compute.sd:.4f}) ' 
-                      'Speed (avg: {speed:.4f})'
-                      'Data (avg: {data_waiting.avg}, sd: {data_waiting.sd:.4f})'.format(
+                      'Speed (avg: {speed:.4f}) '
+                      'Data (avg: {data_waiting.avg:.4f}, sd: {data_waiting.sd:.4f})'.format(
                         1 + epoch, batch_count, batch_compute=batch_compute, speed=speed_avg, data_waiting=data_waiting))
 
         epoch_compute_end = time.time()
         epoch_compute.update(epoch_compute_end - epoch_compute_start)
 
-        print('[{:4d}] Epoch Time (avg: {:.4f}, sd: {:.4f}) Batch Time (avg: {:.4f}, sd: {:.4f}) Loss: {:.4f}'.format(
-            1 + epoch, epoch_compute.avg, epoch_compute.sd, batch_compute.avg, batch_compute.sd, floss))
+        print('[{:4d}] Epoch Time (avg: {:.4f}, sd: {:.4f}) '
+              'Batch Time (max: {batch_compute.max:.4f}, sd: {batch_compute.min:.4f}) Loss: {loss:.4f}'.format(
+            1 + epoch, epoch_compute.avg, epoch_compute.sd, batch_compute=batch_compute, loss=floss))
 
         if not should_run():
             break

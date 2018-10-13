@@ -22,6 +22,8 @@ class StatStream(object):
         self.current_count = 0
         self.current_obs = 0
         self.first_obs = 0
+        self.min = float('inf')
+        self.max = float('-inf')
 
     def __iadd__(self, other):
         self.update(other, 1)
@@ -40,6 +42,9 @@ class StatStream(object):
         self.current_obs = val - self.first_obs
         self.sum += float(self.current_obs) * float(weight)
         self.sum_sqr += float(self.current_obs * self.current_obs) * float(weight)
+
+        self.min = min(self.min, val)
+        self.max = max(self.max, val)
 
     @property
     def val(self) -> float:
