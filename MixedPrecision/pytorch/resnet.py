@@ -119,13 +119,23 @@ def train(args, model, dataset):
     mean = utils.enable_half(torch.tensor([0.485 * 255, 0.456 * 255, 0.406 * 255]).float()).view(1, 3, 1, 1)
     std = utils.enable_half(torch.tensor([0.229 * 255, 0.224 * 255, 0.225 * 255]).float()).view(1, 3, 1, 1)
 
+    # Stop after n print when benchmarking (n * batch_count) batch
+    print_count = 0
+
+    def should_run():
+        if args.prof is None:
+            return True
+        return print_count < args.prof
+
     for epoch in range(0, args.epochs):
         epoch_compute_start = time.time()
 
         data = DataPreFetcher(dataset, mean=mean, std=std)
         x, y = data.next()
 
-        while x is not None:
+        batch_count = 0
+
+        while x is not None and should_run():
             # compute output
             batch_compute_start = time.time()
             output = model(x)
@@ -142,6 +152,16 @@ def train(args, model, dataset):
             batch_compute += batch_compute_end - batch_compute_start
 
             x, y = data.next()
+
+            batch_count += 1
+
+            if batch_count % 10 == 0:
+                print_count += 1
+                print('[{:4d}][{:4d}] Batch Time (avg: {:.4f}, sd: {:.4f})'.format(
+                        1 + epoch, batch_count, batch_compute.avg, batch_compute.sd))
+
+        if not should_run():
+            break
 
         epoch_compute_end = time.time()
         epoch_compute.update(epoch_compute_end - epoch_compute_start)
@@ -198,4 +218,4 @@ def resnet50_main():
 
 
 if __name__ == '__main__':
-    resnet50_main()
+    resnet18_main()
