@@ -88,7 +88,6 @@ def train(args, model, dataset):
     from MixedPrecision.tools.prefetcher import DataPreFetcher
 
     from apex.fp16_utils import network_to_half
-    from torch.autograd import Variable
 
     model = utils.enable_cuda(model)
 
@@ -115,6 +114,7 @@ def train(args, model, dataset):
 
     epoch_compute = StatStream(drop_first_obs=1)
     batch_compute = StatStream(drop_first_obs=10)
+    data_waiting = StatStream(drop_first_obs=1)
     floss = float('inf')
 
     mean = utils.enable_half(torch.tensor([0.485 * 255, 0.456 * 255, 0.406 * 255]).float()).view(1, 3, 1, 1)
@@ -132,15 +132,20 @@ def train(args, model, dataset):
         epoch_compute_start = time.time()
 
         data = DataPreFetcher(dataset, mean=mean, std=std)
+
+        data_time_start = time.time()
         x, y = data.next()
 
         batch_count = 0
 
         while x is not None and should_run():
+            data_time_end = time.time()
+            data_waiting += (data_time_end - data_time_start)
+
             # compute output
             batch_compute_start = time.time()
-            output = model(Variable(x))
-            loss = criterion(output, Variable(y))
+            output = model(x)
+            loss = criterion(output, y)
             floss = loss.item()
 
             # compute gradient and do SGD step
@@ -151,27 +156,30 @@ def train(args, model, dataset):
             batch_compute_end = time.time()
             batch_compute += batch_compute_end - batch_compute_start
 
+            data_time_start = time.time()
             x, y = data.next()
 
             batch_count += 1
 
             if batch_count % 10 == 0:
+
                 print_count += 1
                 speed_avg = args.batch_size / batch_compute.avg
 
                 print('[{:4d}][{:4d}] '
                       'Batch Time (avg: {batch_compute.avg:.4f}, sd: {batch_compute.sd:.4f}) ' 
-                      'Speed (avg: {speed:.4f})'.format(
-                        1 + epoch, batch_count, batch_compute=batch_compute, speed=speed_avg))
-
-        if not should_run():
-            break
+                      'Speed (avg: {speed:.4f})'
+                      'Data (avg: {data_waiting.avg}, sd: {data_waiting.sd:.4f})'.format(
+                        1 + epoch, batch_count, batch_compute=batch_compute, speed=speed_avg, data_waiting=data_waiting))
 
         epoch_compute_end = time.time()
         epoch_compute.update(epoch_compute_end - epoch_compute_start)
 
         print('[{:4d}] Epoch Time (avg: {:.4f}, sd: {:.4f}) Batch Time (avg: {:.4f}, sd: {:.4f}) Loss: {:.4f}'.format(
             1 + epoch, epoch_compute.avg, epoch_compute.sd, batch_compute.avg, batch_compute.sd, floss))
+
+        if not should_run():
+            break
 
 
 def generic_main(make_model):
