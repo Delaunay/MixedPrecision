@@ -88,6 +88,7 @@ def train(args, model, dataset):
     from MixedPrecision.tools.prefetcher import DataPreFetcher
 
     from apex.fp16_utils import network_to_half
+    from torch.autograd import Variable
 
     model = utils.enable_cuda(model)
 
@@ -138,8 +139,8 @@ def train(args, model, dataset):
         while x is not None and should_run():
             # compute output
             batch_compute_start = time.time()
-            output = model(x)
-            loss = criterion(output, y)
+            output = model(Variable(x))
+            loss = criterion(output, Variable(y))
             floss = loss.item()
 
             # compute gradient and do SGD step
@@ -147,7 +148,6 @@ def train(args, model, dataset):
             optimizer.backward(loss)
             optimizer.step()
 
-            torch.cuda.synchronize()
             batch_compute_end = time.time()
             batch_compute += batch_compute_end - batch_compute_start
 
@@ -158,12 +158,11 @@ def train(args, model, dataset):
             if batch_count % 10 == 0:
                 print_count += 1
                 speed_avg = args.batch_size / batch_compute.avg
-                speed_sd = 0 if batch_compute.sd == 0 else args.batch_size / batch_compute.sd
 
-                print('[{:4d}][{:4d}]'
-                      'Batch Time (avg: {batch_compute.avg:.4f}, sd: {batch_compute.sd:.4f})' 
-                      'Speed (avg: {speed[0]:.4f}, sd: {speed[1]:.4f})'.format(
-                        1 + epoch, batch_count, batch_compute=batch_compute, speed=(speed_avg, speed_sd)))
+                print('[{:4d}][{:4d}] '
+                      'Batch Time (avg: {batch_compute.avg:.4f}, sd: {batch_compute.sd:.4f}) ' 
+                      'Speed (avg: {speed:.4f})'.format(
+                        1 + epoch, batch_count, batch_compute=batch_compute, speed=speed_avg))
 
         if not should_run():
             break
