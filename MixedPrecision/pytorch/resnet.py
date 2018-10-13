@@ -157,8 +157,13 @@ def train(args, model, dataset):
 
             if batch_count % 10 == 0:
                 print_count += 1
-                print('[{:4d}][{:4d}] Batch Time (avg: {:.4f}, sd: {:.4f})'.format(
-                        1 + epoch, batch_count, batch_compute.avg, batch_compute.sd))
+                speed_avg = args.batch_size / batch_compute.avg
+                speed_sd = 0 if batch_compute.sd == 0 else args.batch_size / batch_compute.sd
+
+                print('[{:4d}][{:4d}]'
+                      'Batch Time (avg: {batch_compute.avg:.4f}, sd: {batch_compute.sd:.4f})' 
+                      'Speed (avg: {speed[0]:.4f}, sd: {speed[1]:.4f})'.format(
+                        1 + epoch, batch_count, batch_compute=batch_compute.avg, speed=(speed_avg, speed_sd)))
 
         if not should_run():
             break
