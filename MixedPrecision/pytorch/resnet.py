@@ -163,7 +163,7 @@ def train(args, model, dataset):
                 print('[{:4d}][{:4d}]'
                       'Batch Time (avg: {batch_compute.avg:.4f}, sd: {batch_compute.sd:.4f})' 
                       'Speed (avg: {speed[0]:.4f}, sd: {speed[1]:.4f})'.format(
-                        1 + epoch, batch_count, batch_compute=batch_compute.avg, speed=(speed_avg, speed_sd)))
+                        1 + epoch, batch_count, batch_compute=batch_compute, speed=(speed_avg, speed_sd)))
 
         if not should_run():
             break
