@@ -5,12 +5,14 @@ global_use_gpu = False
 global_use_half = False
 
 
-def set_use_gpu(val):
+def set_use_gpu(val, benchmode=True):
     global global_use_gpu
 
     # enable the inbuilt cudnn auto-tuner
     # Faster for fixed size inputs
-    torch.backends.cudnn.benchmark = True
+    if benchmode:
+        torch.backends.cudnn.benchmark = True
+
     global_use_gpu = torch.cuda.is_available() and val
 
 

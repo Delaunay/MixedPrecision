@@ -61,7 +61,7 @@ The expected speed up gain should be around 2x according to [this][1]
 |   Speed   |    B=128 | 16/32 |     B=256 | 16/32 | 
 |----------:|---------:|------:|----------:|------:|
 |Resnet18-32| 1267.474 |       | 1430.7821 |       |
-|Resnet18-16| 2991.365 |  2.36 | 3105.9595 |  1.95 | 
+|Resnet18-16| 2991.365 |  2.36 | 3105.9595 |  2.17 | 
 |Resnet50-32|  345.037 |       |           |       |
 |Resnet50-16|  732.320 |  2.12 |  805.9883 |       |
 
@@ -97,7 +97,7 @@ Note:
 
 
 
-# Tensorflow
+# Tensorflow - TODO
 
 ## Expectation
 

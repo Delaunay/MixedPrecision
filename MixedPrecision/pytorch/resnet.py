@@ -202,7 +202,7 @@ def generic_main(make_model):
     parser = get_parser()
     args = parser.parse_args()
 
-    utils.set_use_gpu(args.gpu)
+    utils.set_use_gpu(args.gpu, not args.no_bench_mode)
     utils.set_use_half(args.half)
 
     for k, v in vars(args).items():
