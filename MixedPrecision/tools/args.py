@@ -70,6 +70,7 @@ def get_parser():
     parser.add_argument('--no-bench-mode', action='store_true', default=False,
                         help='disable benchmark mode for cudnn')
 
-
+    parser.add_argument('--use-dali', action='store_true', default=False,
+                        help='use dali for data loading and pre processing')
 
     return parser

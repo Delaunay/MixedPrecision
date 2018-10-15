@@ -52,14 +52,23 @@ def load_imagenet(args):
     global data_transforms
 
     print('Loading imagenet from {}'.format(args.data))
+    if args.use_dali:
+        from MixedPrecision.tools.dali import make_dali_loader
 
-    train_dataset = datasets.ImageFolder(
-        args.data + '/train/',
-        data_transforms)
+        return make_dali_loader(
+            args,
+            args.data + '/train/',
+            224
+        )
 
-    return torch.utils.data.DataLoader(
-        train_dataset, batch_size=args.batch_size, shuffle=None,
-        num_workers=args.workers, pin_memory=True, collate_fn=utils.fast_collate)
+    else:
+        train_dataset = datasets.ImageFolder(
+            args.data + '/train/',
+            data_transforms)
+
+        return torch.utils.data.DataLoader(
+            train_dataset, batch_size=args.batch_size, shuffle=None,
+            num_workers=args.workers, pin_memory=True, collate_fn=utils.fast_collate)
 
 
 def fake_imagenet(args):
@@ -71,7 +80,7 @@ def fake_imagenet(args):
         transforms.Lambda(lambda x: utils.enable_cuda(x.long()))
     ])
 
-    dataset = fakeit('pytorch', args.batch_size * 10, (3, 224, 244), 1000, data_transforms, target_transform)
+    dataset = fakeit('pytorch', args.batch_size * 10, (3, 224, 224), 1000, data_transforms, target_transform)
 
     return torch.utils.data.DataLoader(
         dataset, batch_size=args.batch_size, pin_memory=True,
