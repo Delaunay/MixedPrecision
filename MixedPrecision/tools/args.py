@@ -67,7 +67,7 @@ def get_parser():
     parser.add_argument('--log_device_placement', action='store_true', default=False,
                         help='Make Tensorflow log device placement')
 
-    parser.add_argument('--no-bench-mode', action='store_false', default=False,
+    parser.add_argument('--no-bench-mode', action='store_true', default=False,
                         help='disable benchmark mode for cudnn')
 
 
