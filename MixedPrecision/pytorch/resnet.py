@@ -142,12 +142,16 @@ def train(args, model, dataset):
     for epoch in range(0, args.epochs):
         epoch_compute_start = time.time()
 
-        data = DataPreFetcher(
-            dataset,
-            mean=mean, std=std,
-            cpu_stats=data_loading_cpu,
-            gpu_stats=data_loading_gpu
-        )
+        # do not prefetch when using dali
+        if args.use_dali:
+            data = dataset
+        else:
+            data = DataPreFetcher(
+                dataset,
+                mean=mean, std=std,
+                cpu_stats=data_loading_cpu,
+                gpu_stats=data_loading_gpu
+            )
 
         data_time_start = time.time()
         x, y = data.next()
