@@ -115,6 +115,8 @@ def train(args, model, dataset):
     epoch_compute = StatStream(drop_first_obs=1)
     batch_compute = StatStream(drop_first_obs=10)
     data_waiting = StatStream(drop_first_obs=1)
+    data_loading_gpu = StatStream(drop_first_obs=0)
+    data_loading_cpu = StatStream(drop_first_obs=0)
     floss = float('inf')
 
     mean = utils.enable_half(torch.tensor([0.485 * 255, 0.456 * 255, 0.406 * 255]).float()).view(1, 3, 1, 1)
@@ -131,7 +133,12 @@ def train(args, model, dataset):
     for epoch in range(0, args.epochs):
         epoch_compute_start = time.time()
 
-        data = DataPreFetcher(dataset, mean=mean, std=std)
+        data = DataPreFetcher(
+            dataset,
+            mean=mean, std=std,
+            cpu_stats=data_loading_cpu,
+            gpu_stats=data_loading_gpu
+        )
 
         data_time_start = time.time()
         x, y = data.next()
@@ -174,10 +181,11 @@ def train(args, model, dataset):
 
         epoch_compute_end = time.time()
         epoch_compute.update(epoch_compute_end - epoch_compute_start)
-
+        print('Data Loading (CPU) (avg: {cpu.avg:.4f}, sd: {cpu.sd:.4f})'.format(cpu=data_loading_cpu))
+        print('Data Loading (GPU) (avg: {gpu.avg:.4f}, sd: {gpu.sd:.4f})'.format(gpu=data_loading_gpu))
         print('[{:4d}] Epoch Time (avg: {:.4f}, sd: {:.4f}) '
-              'Batch Time (max: {batch_compute.max:.4f}, sd: {batch_compute.min:.4f}) Loss: {loss:.4f}'.format(
-            1 + epoch, epoch_compute.avg, epoch_compute.sd, batch_compute=batch_compute, loss=floss))
+              'Batch Time (max: {batch.max:.4f}, min: {batch.min:.4f}) Loss: {loss:.4f}'.format(
+            1 + epoch, epoch_compute.avg, epoch_compute.sd, batch=batch_compute, loss=floss))
 
         if not should_run():
             break
