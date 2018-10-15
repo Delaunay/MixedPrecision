@@ -53,7 +53,13 @@ class DALISinglePipeAdapter:
     def __init__(self, dali_iterator):
         self.iterator = dali_iterator
 
+    def __iter__(self):
+        return self
+
     def __next__(self):
+        return self.next()
+
+    def next(self):
         # Dali Iterator returns something like [x][y][z]
         #   x - Pipe index (0 in our case)
         #   y - 0 -> data 1 -> label
