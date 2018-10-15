@@ -59,6 +59,8 @@ class DALISinglePipeAdapter:
         #   z -  ??
         val = self.iterator.next()
 
+        print(val)
+
         return val[0][0][0], val[0][1][0]
 
 
@@ -70,8 +72,13 @@ def make_dali_loader(args, traindir, crop_size):
         data_dir=traindir,
         crop=crop_size)
 
+    print('Building Pipe')
     pipe.build()
 
+    print('Check Pipe')
+    pipe.run()
+
+    print('Data ready!')
     # DALIClassificationIterator(pipe, size=int(pipe.epoch_size("Reader")))
     return DALISinglePipeAdapter(
         DALIGenericIterator(pipe, ["data", "label"], size=int(pipe.epoch_size("Reader"))))
