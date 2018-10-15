@@ -42,7 +42,7 @@ class HybridTrainPipe(Pipeline):
         images = self.rrc(images)
         output = self.cmnp(images, mirror=rng)
 
-        return [output, self.labels]
+        return [output, self.labels.gpu()]
 
 
 class DALISinglePipeAdapter:
