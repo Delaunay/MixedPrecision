@@ -18,13 +18,13 @@ class DataPreFetcher:
         self.next_target = None
         self.next_input = None
         self.stream = self._make_stream()
-        self.preload()
 
         self.start_event = torch.cuda.Event(enable_timing=True, blocking=False, interprocess=False)
         self.end_event = torch.cuda.Event(enable_timing=True, blocking=False, interprocess=False)
 
         self.gpu_time = gpu_stats
         self.cpu_time = cpu_stats
+        self.preload()
 
     @staticmethod
     def _make_stream():
@@ -40,7 +40,7 @@ class DataPreFetcher:
             start = time.time()
             self.next_input, self.next_target = next(self.loader)
             end = time.time()
-            self.cpu_time += end - start
+            self.cpu_time.update(end - start)
 
         except StopIteration:
             self.next_input = None
