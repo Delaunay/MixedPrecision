@@ -67,7 +67,7 @@ class DataPreFetcher:
 
             # Compute the time it took to load the data
             self.end_event.synchronize()
-            self.gpu_time += self.start_event.elapsed_time(self.end_event)
+            self.gpu_time += self.start_event.elapsed_time(self.end_event) / 1000.0
 
         input = self.next_input
         target = self.next_target
