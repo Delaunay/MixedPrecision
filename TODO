@@ -1,0 +1,3 @@
+* Fix FakeData for imagenet
+* Make tensorflow equivalent
+* Use Dali for resnet18 see if it reduce speed variance
