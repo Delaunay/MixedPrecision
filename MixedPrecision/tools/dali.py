@@ -11,9 +11,10 @@ class HybridTrainPipe(Pipeline):
     def __init__(self, batch_size, num_threads, device_id, data_dir, crop):
         super(HybridTrainPipe, self).__init__(batch_size, num_threads, device_id, seed=0)
 
+        print('Reading from {}'.format(data_dir))
         self.input = ops.FileReader(
             file_root=data_dir,
-            shard_id=1,
+            shard_id=0,
             num_shards=1,
             random_shuffle=False)
 
