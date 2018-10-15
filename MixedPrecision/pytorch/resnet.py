@@ -161,7 +161,7 @@ def train(args, model, dataset):
             # compute output
             batch_compute_start = time.time()
             output = model(x)
-            loss = criterion(output, y)
+            loss = criterion(output, y.long())
             floss = loss.item()
 
             # compute gradient and do SGD step

@@ -66,7 +66,7 @@ class DALISinglePipeAdapter:
         #   z -  ??
         val = self.iterator.next()
 
-        print(val)
+        print(len(val), len(val[0]), len(val[0][0]))
 
         return val[0][0][0], val[0][1][0]
 
