@@ -13,6 +13,8 @@ import torchvision.models.resnet as resnet
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 
+import math
+
 """
 def load_imagenet(args):
     import torchvision.transforms as transforms
@@ -160,21 +162,28 @@ def train(args, model, dataset):
 
         while x is not None and should_run():
             data_time_end = time.time()
-            data_waiting += (data_time_end - data_time_start)
+            wait_time  = data_time_end - data_time_start
+            data_waiting += wait_time
 
-            # compute output
-            batch_compute_start = time.time()
-            output = model(x)
-            loss = criterion(output, y.long())
-            floss = loss.item()
+            batch_reuse = math.floor(wait_time / batch_compute.avg)
 
-            # compute gradient and do SGD step
-            optimizer.zero_grad()
-            optimizer.backward(loss)
-            optimizer.step()
+            if batch_reuse > 1:
+                print('Reusing batch {} times'.format(batch_reuse))
 
-            batch_compute_end = time.time()
-            batch_compute += batch_compute_end - batch_compute_start
+            for i in range(0, batch_reuse):
+                # compute output
+                batch_compute_start = time.time()
+                output = model(x)
+                loss = criterion(output, y.long())
+                floss = loss.item()
+
+                # compute gradient and do SGD step
+                optimizer.zero_grad()
+                optimizer.backward(loss)
+                optimizer.step()
+
+                batch_compute_end = time.time()
+                batch_compute += batch_compute_end - batch_compute_start
 
             data_time_start = time.time()
             x, y = data.next()
