@@ -164,11 +164,13 @@ def train(args, model, dataset):
             data_time_end = time.time()
             wait_time  = data_time_end - data_time_start
             data_waiting += wait_time
+            batch_reuse = 1
 
-            batch_reuse = math.floor(wait_time / batch_compute.avg)
+            if batch_compute.avg > 0:
+                batch_reuse = math.floor(wait_time / batch_compute.avg) + 1
 
-            if batch_reuse > 1:
-                print('Reusing batch {} times'.format(batch_reuse))
+                if batch_reuse > 1:
+                    print('Reusing batch {} times'.format(batch_reuse))
 
             for i in range(0, batch_reuse):
                 # compute output
