@@ -159,15 +159,16 @@ def train(args, model, dataset):
         x, y = data.next()
 
         batch_count = 0
+        effective_batch = 0
 
         while x is not None and should_run():
             data_time_end = time.time()
-            wait_time  = data_time_end - data_time_start
-            data_waiting += wait_time
+            data_waiting += (data_time_end - data_time_start)
             batch_reuse = 1
 
+            # if IO is slow reuse the same batch instead of waiting
             if batch_compute.avg > 0:
-                batch_reuse = math.floor(wait_time / batch_compute.avg) + 1
+                batch_reuse = max(math.floor(data_waiting.avg / batch_compute.avg), 1)
 
                 if batch_reuse > 1:
                     print('Reusing batch {} times'.format(batch_reuse))
@@ -186,13 +187,14 @@ def train(args, model, dataset):
 
                 batch_compute_end = time.time()
                 batch_compute += batch_compute_end - batch_compute_start
+                effective_batch += 1
 
             data_time_start = time.time()
             x, y = data.next()
 
             batch_count += 1
 
-            if batch_count % 10 == 0:
+            if effective_batch % 10 == 0:
 
                 print_count += 1
                 speed_avg = args.batch_size / batch_compute.avg
@@ -208,7 +210,7 @@ def train(args, model, dataset):
         print('Data Loading (CPU) (avg: {cpu.avg:.4f}, sd: {cpu.sd:.4f})'.format(cpu=data_loading_cpu))
         print('Data Loading (GPU) (avg: {gpu.avg:.4f}, sd: {gpu.sd:.4f})'.format(gpu=data_loading_gpu))
         print('[{:4d}] Epoch Time (avg: {:.4f}, sd: {:.4f}) '
-              'Batch Time (max: {batch.max:.4f}, min: {batch.min:.4f}) Loss: {loss:.4f}'.format(
+              '10 Batch Time (max: {batch.max:.4f}, min: {batch.min:.4f}) Loss: {loss:.4f}'.format(
             1 + epoch, epoch_compute.avg, epoch_compute.sd, batch=batch_compute, loss=floss))
 
         if not should_run():
