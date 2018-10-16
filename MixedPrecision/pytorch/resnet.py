@@ -100,7 +100,7 @@ def train(args, model, dataset):
 
     model = utils.enable_cuda(model)
 
-    if utils.use_half():
+    if args.half:
         model = network_to_half(model)
 
     criterion = utils.enable_cuda(nn.CrossEntropyLoss())
