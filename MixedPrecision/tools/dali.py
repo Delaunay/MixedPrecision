@@ -8,8 +8,12 @@ except ImportError:
 
 
 class HybridTrainPipe(Pipeline):
-    def __init__(self, batch_size, num_threads, device_id, data_dir, crop):
+    def __init__(self, batch_size, num_threads, device_id, data_dir, crop, half=False):
         super(HybridTrainPipe, self).__init__(batch_size, num_threads, device_id, seed=0)
+
+        out_type = types.FLOAT
+        if half:
+            out_type = types.FLOAT16
 
         print('Reading from {}'.format(data_dir))
         self.input = ops.FileReader(
@@ -24,7 +28,7 @@ class HybridTrainPipe(Pipeline):
 
         self.cmnp = ops.CropMirrorNormalize(
             device="gpu",
-            output_dtype=types.FLOAT,
+            output_dtype=out_type,
             output_layout=types.NCHW,
             crop=(crop, crop),
             image_type=types.RGB,

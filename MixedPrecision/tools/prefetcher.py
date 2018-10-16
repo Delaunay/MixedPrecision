@@ -12,6 +12,7 @@ class DataPreFetcher:
         Prefetch data async, normalize it, and send it to cuda in the correct format (f16 or f32)
     """
     def __init__(self, loader, mean , std, cpu_stats=StatStream(0), gpu_stats=StatStream(0)):
+        print('Using Prefetcher')
         self.loader = iter(loader)
         self.mean = mean
         self.std = std
