@@ -229,7 +229,7 @@ def train(args, model, dataset):
         epoch_compute.update(epoch_compute_end - epoch_compute_start)
 
         bs = args.batch_size
-        columns = ['Metric', 'Average', 'Deviation', 'Min', 'Max'],
+        columns = ['Metric', 'Average', 'Deviation', 'Min', 'Max']
         report = [
             ['CPU Data loading', data_loading_cpu.avg, data_loading_cpu.sd, data_loading_cpu.min, data_loading_cpu.max],
             ['GPU Data Loading', data_loading_gpu.avg, data_loading_gpu.sd, data_loading_gpu.min, data_loading_gpu.max],
