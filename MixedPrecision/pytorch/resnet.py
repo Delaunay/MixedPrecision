@@ -8,6 +8,7 @@ import torch.utils.data
 import torch.utils.data.distributed
 
 import MixedPrecision.tools.utils as utils
+import MixedPrecision.tools.report as report
 
 import torchvision.models.resnet as resnet
 import torchvision.transforms as transforms
@@ -224,26 +225,22 @@ def train(args, model, dataset):
                       'Data (avg: {data_waiting.avg:.4f}, sd: {data_waiting.sd:.4f})'.format(
                         1 + epoch, batch_count, batch_compute=batch_compute, speed=speed_avg, data_waiting=data_waiting))
 
-
         epoch_compute_end = time.time()
         epoch_compute.update(epoch_compute_end - epoch_compute_start)
 
-        bs = args.batch_size
-        columns = ['Metric', 'Average', 'Deviation', 'Min', 'Max']
-        report = [
-            ['CPU Data loading', data_loading_cpu.avg, data_loading_cpu.sd, data_loading_cpu.min, data_loading_cpu.max],
-            ['GPU Data Loading', data_loading_gpu.avg, data_loading_gpu.sd, data_loading_gpu.min, data_loading_gpu.max],
-            ['Waiting for data', data_waiting.avg, data_waiting.sd, data_waiting.min, data_waiting.max],
-            ['CPU Compute Time', batch_compute.avg, batch_compute.sd, batch_compute.min, batch_compute.max],
-            ['GPU Compute Time', gpu_compute.avg, gpu_compute.sd, gpu_compute.min, gpu_compute.max],
-            ['Full Batch Time', full_time.avg, full_time.sd, full_time.min, full_time.max],
-            ['Compute Speed', bs / batch_compute.avg, 'NA', bs / batch_compute.max, bs / batch_compute.min],
-            ['Effective Speed', bs / full_time.avg, 'NA', bs / full_time.max, bs / full_time.min],
-        ]
-
         if args.prof is not None:
-            import pandas as pd
-            print(pd.DataFrame(report, columns=columns))
+            bs = args.batch_size
+            report.print_table(
+                ['Metric', 'Average', 'Deviation', 'Min', 'Max'],[
+                ['CPU Data loading', data_loading_cpu.avg, data_loading_cpu.sd, data_loading_cpu.min, data_loading_cpu.max],
+                ['GPU Data Loading', data_loading_gpu.avg, data_loading_gpu.sd, data_loading_gpu.min, data_loading_gpu.max],
+                ['Waiting for data', data_waiting.avg, data_waiting.sd, data_waiting.min, data_waiting.max],
+                ['CPU Compute Time', batch_compute.avg, batch_compute.sd, batch_compute.min, batch_compute.max],
+                ['GPU Compute Time', gpu_compute.avg, gpu_compute.sd, gpu_compute.min, gpu_compute.max],
+                ['Full Batch Time', full_time.avg, full_time.sd, full_time.min, full_time.max],
+                ['Compute Speed', bs / batch_compute.avg, 'NA', bs / batch_compute.max, bs / batch_compute.min],
+                ['Effective Speed', bs / full_time.avg, 'NA', bs / full_time.max, bs / full_time.min],
+            ])
 
         if not should_run():
             break
