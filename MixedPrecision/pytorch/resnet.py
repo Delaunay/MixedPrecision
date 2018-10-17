@@ -228,7 +228,7 @@ def train(args, model, dataset):
         epoch_compute_end = time.time()
         epoch_compute.update(epoch_compute_end - epoch_compute_start)
 
-        if args.prof is not None:
+        if not should_run():
             bs = args.batch_size
             report.print_table(
                 ['Metric', 'Average', 'Deviation', 'Min', 'Max'],[
@@ -241,8 +241,6 @@ def train(args, model, dataset):
                 ['Compute Speed', bs / batch_compute.avg, 'NA', bs / batch_compute.max, bs / batch_compute.min],
                 ['Effective Speed', bs / full_time.avg, 'NA', bs / full_time.max, bs / full_time.min],
             ])
-
-        if not should_run():
             break
 
 
