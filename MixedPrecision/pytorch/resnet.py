@@ -224,29 +224,26 @@ def train(args, model, dataset):
                       'Data (avg: {data_waiting.avg:.4f}, sd: {data_waiting.sd:.4f})'.format(
                         1 + epoch, batch_count, batch_compute=batch_compute, speed=speed_avg, data_waiting=data_waiting))
 
+
         epoch_compute_end = time.time()
         epoch_compute.update(epoch_compute_end - epoch_compute_start)
-        print('Data Loading (CPU) ({a.avg:.4f}, sd: {a.avg:.4f}, min: {a.min:.4f}, max: {a.max:.4f})'
-              .format(a=data_loading_cpu))
 
-        print('Data Loading (GPU) ({a.avg:.4f}, sd: {a.avg:.4f}, min: {a.min:.4f}, max: {a.max:.4f})'
-              .format(a=data_loading_gpu))
+        bs = args.batch_size
+        columns = ['Metric', 'Average', 'Deviation', 'Min', 'Max'],
+        report = [
+            ['CPU Data loading', data_loading_cpu.avg, data_loading_cpu.sd, data_loading_cpu.min, data_loading_cpu.max],
+            ['GPU Data Loading', data_loading_gpu.avg, data_loading_gpu.sd, data_loading_gpu.min, data_loading_gpu.max],
+            ['Waiting for data', data_waiting.avg, data_waiting.sd, data_waiting.min, data_waiting.max],
+            ['CPU Compute Time', batch_compute.avg, batch_compute.sd, batch_compute.min, batch_compute.max],
+            ['GPU Compute Time', gpu_compute.avg, gpu_compute.sd, gpu_compute.min, gpu_compute.max],
+            ['Full Batch Time', full_time.avg, full_time.sd, full_time.min, full_time.max],
+            ['Compute Speed', bs / batch_compute.avg, 'NA', bs / batch_compute.max, bs / batch_compute.min],
+            ['Effective Speed', bs / full_time.avg, 'NA', bs / full_time.max, bs / full_time.min],
+        ]
 
-        print('Time waiting for data {a.avg:.4f}, sd: {a.avg:.4f}, min: {a.min:.4f}, max: {a.max:.4f})'
-              .format(a=data_waiting))
-
-        print('CPU Compute Time(avg: {a.avg:.4f}, sd: {a.avg:.4f}, min: {a.min:.4f}, max: {a.max:.4f}) Speed {speed:.4f}'
-              .format(a=batch_compute, speed=args.batch_size / batch_compute.avg))
-
-        print('GPU Compute Time(avg: {a.avg:.4f}, sd: {a.avg:.4f}, min: {a.min:.4f}, max: {a.max:.4f}) Speed {speed:.4f}'
-              .format(a=gpu_compute, speed=args.batch_size / gpu_compute.avg))
-
-        print('Full Batch Time (avg: {a.avg:.4f}, sd: {a.avg:.4f}, min: {a.min:.4f}, max: {a.max:.4f}) Speed {speed:.4f}'
-              .format(a=full_time, speed=args.batch_size / full_time.avg))
-
-        print('[{:4d}] 10 Batch Time (avg: {:.4f}, sd: {:.4f}) '
-              ' Batch Time (max: {batch.max:.4f}, min: {batch.min:.4f}) Loss: {loss:.4f}'.format(
-            1 + epoch, epoch_compute.avg, epoch_compute.sd, batch=batch_compute, loss=floss))
+        if args.prof is not None:
+            import pandas as pd
+            print(pd.DataFrame(report, columns=columns))
 
         if not should_run():
             break
