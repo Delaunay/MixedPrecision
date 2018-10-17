@@ -188,21 +188,20 @@ def train(args, model, dataset):
                 batch_compute_start = time.time()
 
                 # Compute time using the GPU as well
-                with current_stream() as stream:
-                    stream.record_event(start_event)
+                torch.cuda.current_stream().record_event(start_event)
 
-                    output = model(x)
-                    loss = criterion(output, y.long())
-                    floss = loss.item()
+                output = model(x)
+                loss = criterion(output, y.long())
+                floss = loss.item()
 
-                    # compute gradient and do SGD step
-                    optimizer.zero_grad()
-                    optimizer.backward(loss)
-                    optimizer.step()
-                    stream.record_event(end_event)
+                # compute gradient and do SGD step
+                optimizer.zero_grad()
+                optimizer.backward(loss)
+                optimizer.step()
+                torch.cuda.current_stream().record_event(end_event)
 
-                    end_event.synchronize()
-                    gpu_compute += start_event.elapsed_time(end_event) / 1000.0
+                end_event.synchronize()
+                gpu_compute += start_event.elapsed_time(end_event) / 1000.0
 
                 batch_compute_end = time.time()
                 full_time += batch_compute_end - data_time_start
