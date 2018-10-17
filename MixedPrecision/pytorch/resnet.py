@@ -90,6 +90,12 @@ def fake_imagenet(args):
     )
 
 
+def current_stream():
+    if utils.use_gpu():
+        return torch.cuda.current_stream()
+    return None
+
+
 def train(args, model, dataset):
     import time
 
@@ -125,9 +131,13 @@ def train(args, model, dataset):
 
     epoch_compute = StatStream(drop_first_obs=1)
     batch_compute = StatStream(drop_first_obs=10)
+    gpu_compute = StatStream(drop_first_obs=10)
     data_waiting = StatStream(drop_first_obs=1)
     data_loading_gpu = StatStream(drop_first_obs=0)
     data_loading_cpu = StatStream(drop_first_obs=0)
+    full_time = StatStream(drop_first_obs=10)
+    start_event = torch.cuda.Event(enable_timing=True, blocking=False, interprocess=False)
+    end_event = torch.cuda.Event(enable_timing=True, blocking=False, interprocess=False)
     floss = float('inf')
 
     mean = utils.enable_half(torch.tensor([0.485 * 255, 0.456 * 255, 0.406 * 255]).float()).view(1, 3, 1, 1)
@@ -167,8 +177,8 @@ def train(args, model, dataset):
             batch_reuse = 1
 
             # if IO is slow reuse the same batch instead of waiting
-            if batch_compute.avg > 0:
-                batch_reuse = max(math.floor(data_waiting.avg / batch_compute.avg), 1)
+            if batch_compute.avg > 0 and args.batch_reuse:
+                batch_reuse = int(max(math.floor(data_waiting.avg / batch_compute.avg), 1))
 
                 if batch_reuse > 1:
                     print('Reusing batch {} times'.format(batch_reuse))
@@ -176,16 +186,26 @@ def train(args, model, dataset):
             for i in range(0, batch_reuse):
                 # compute output
                 batch_compute_start = time.time()
-                output = model(x)
-                loss = criterion(output, y.long())
-                floss = loss.item()
 
-                # compute gradient and do SGD step
-                optimizer.zero_grad()
-                optimizer.backward(loss)
-                optimizer.step()
+                # Compute time using the GPU as well
+                with current_stream() as stream:
+                    stream.record_event(start_event)
+
+                    output = model(x)
+                    loss = criterion(output, y.long())
+                    floss = loss.item()
+
+                    # compute gradient and do SGD step
+                    optimizer.zero_grad()
+                    optimizer.backward(loss)
+                    optimizer.step()
+                    stream.record_event(end_event)
+
+                    end_event.synchronize()
+                    gpu_compute += start_event.elapsed_time(end_event) / 1000.0
 
                 batch_compute_end = time.time()
+                full_time += batch_compute_end - data_time_start
                 batch_compute += batch_compute_end - batch_compute_start
                 effective_batch += 1
 
@@ -207,10 +227,26 @@ def train(args, model, dataset):
 
         epoch_compute_end = time.time()
         epoch_compute.update(epoch_compute_end - epoch_compute_start)
-        print('Data Loading (CPU) (avg: {cpu.avg:.4f}, sd: {cpu.sd:.4f})'.format(cpu=data_loading_cpu))
-        print('Data Loading (GPU) (avg: {gpu.avg:.4f}, sd: {gpu.sd:.4f})'.format(gpu=data_loading_gpu))
-        print('[{:4d}] Epoch Time (avg: {:.4f}, sd: {:.4f}) '
-              '10 Batch Time (max: {batch.max:.4f}, min: {batch.min:.4f}) Loss: {loss:.4f}'.format(
+        print('Data Loading (CPU) ({a.avg:.4f}, sd: {a.avg:.4f}, min: {a.min:.4f}, max: {a.max:.4f})'
+              .format(a=data_loading_cpu))
+
+        print('Data Loading (GPU) ({a.avg:.4f}, sd: {a.avg:.4f}, min: {a.min:.4f}, max: {a.max:.4f})'
+              .format(a=data_loading_gpu))
+
+        print('Time waiting for data {a.avg:.4f}, sd: {a.avg:.4f}, min: {a.min:.4f}, max: {a.max:.4f})'
+              .format(a=data_waiting))
+
+        print('CPU Compute Time(avg: {a.avg:.4f}, sd: {a.avg:.4f}, min: {a.min:.4f}, max: {a.max:.4f}) Speed {speed:.4f}'
+              .format(a=batch_compute, speed=args.batch_size / batch_compute.avg))
+
+        print('GPU Compute Time(avg: {a.avg:.4f}, sd: {a.avg:.4f}, min: {a.min:.4f}, max: {a.max:.4f}) Speed {speed:.4f}'
+              .format(a=gpu_compute, speed=args.batch_size / gpu_compute.avg))
+
+        print('Full Batch Time (avg: {a.avg:.4f}, sd: {a.avg:.4f}, min: {a.min:.4f}, max: {a.max:.4f}) Speed {speed:.4f}'
+              .format(a=full_time, speed=args.batch_size / full_time.avg))
+
+        print('[{:4d}] 10 Batch Time (avg: {:.4f}, sd: {:.4f}) '
+              ' Batch Time (max: {batch.max:.4f}, min: {batch.min:.4f}) Loss: {loss:.4f}'.format(
             1 + epoch, epoch_compute.avg, epoch_compute.sd, batch=batch_compute, loss=floss))
 
         if not should_run():

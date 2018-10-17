@@ -43,7 +43,7 @@ The expected speed up gain should be around 2x according to [this][1]
 * Resnet-18 speed seems limited by data loading. 
 
 
-## Benchmark
+## Benchmark - Mixed Precision Repo
 
 ### Process
 

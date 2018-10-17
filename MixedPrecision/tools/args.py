@@ -73,4 +73,7 @@ def get_parser():
     parser.add_argument('--use-dali', action='store_true', default=False,
                         help='use dali for data loading and pre processing')
 
+    parser.add_argument('--batch-reuse', action='store_true', default=False,
+                        help='Re use old batch if data loading is slow')
+
     return parser
