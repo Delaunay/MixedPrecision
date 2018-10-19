@@ -97,7 +97,7 @@ def current_stream():
     return None
 
 
-def train(args, model, dataset):
+def train(args, model, dataset, name):
     import time
 
     import MixedPrecision.tools.utils as utils
@@ -231,20 +231,20 @@ def train(args, model, dataset):
         if not should_run():
             bs = args.batch_size
             report.print_table(
-                ['Metric', 'Average', 'Deviation', 'Min', 'Max', 'half', 'batch', 'workers', 'dali'], [
-                ['CPU Data loading', data_loading_cpu.avg, data_loading_cpu.sd, data_loading_cpu.min, data_loading_cpu.max, args.half, args.batch_size, args.workers, args.use_dali],
-                ['GPU Data Loading', data_loading_gpu.avg, data_loading_gpu.sd, data_loading_gpu.min, data_loading_gpu.max, args.half, args.batch_size, args.workers, args.use_dali],
-                ['Waiting for data', data_waiting.avg, data_waiting.sd, data_waiting.min, data_waiting.max, args.half, args.batch_size, args.workers, args.use_dali],
-                ['CPU Compute Time', batch_compute.avg, batch_compute.sd, batch_compute.min, batch_compute.max, args.half, args.batch_size, args.workers, args.use_dali],
-                ['GPU Compute Time', gpu_compute.avg, gpu_compute.sd, gpu_compute.min, gpu_compute.max, args.half, args.batch_size, args.workers, args.use_dali],
-                ['Full Batch Time', full_time.avg, full_time.sd, full_time.min, full_time.max, args.half, args.batch_size, args.workers, args.use_dali],
-                ['Compute Speed', bs / batch_compute.avg, 'NA', bs / batch_compute.max, bs / batch_compute.min, args.half, args.batch_size, args.workers, args.use_dali],
-                ['Effective Speed', bs / full_time.avg, 'NA', bs / full_time.max, bs / full_time.min, args.half, args.batch_size, args.workers, args.use_dali],
+                ['Metric', 'Average', 'Deviation', 'Min', 'Max', 'half', 'batch', 'workers', 'dali', 'model'], [
+                ['CPU Data loading', data_loading_cpu.avg, data_loading_cpu.sd, data_loading_cpu.min, data_loading_cpu.max, args.half, args.batch_size, args.workers, args.use_dali, name],
+                ['GPU Data Loading', data_loading_gpu.avg, data_loading_gpu.sd, data_loading_gpu.min, data_loading_gpu.max, args.half, args.batch_size, args.workers, args.use_dali, name],
+                ['Waiting for data', data_waiting.avg, data_waiting.sd, data_waiting.min, data_waiting.max, args.half, args.batch_size, args.workers, args.use_dali, name],
+                ['CPU Compute Time', batch_compute.avg, batch_compute.sd, batch_compute.min, batch_compute.max, args.half, args.batch_size, args.workers, args.use_dali, name],
+                ['GPU Compute Time', gpu_compute.avg, gpu_compute.sd, gpu_compute.min, gpu_compute.max, args.half, args.batch_size, args.workers, args.use_dali, name],
+                ['Full Batch Time', full_time.avg, full_time.sd, full_time.min, full_time.max, args.half, args.batch_size, args.workers, args.use_dali, name],
+                ['Compute Speed', bs / batch_compute.avg, 'NA', bs / batch_compute.max, bs / batch_compute.min, args.half, args.batch_size, args.workers, args.use_dali, name],
+                ['Effective Speed', bs / full_time.avg, 'NA', bs / full_time.max, bs / full_time.min, args.half, args.batch_size, args.workers, args.use_dali, name],
             ])
             break
 
 
-def generic_main(make_model):
+def generic_main(make_model, name):
     import sys
     from MixedPrecision.tools.args import get_parser
     from MixedPrecision.tools.utils import summary
@@ -278,17 +278,17 @@ def generic_main(make_model):
     else:
         data = load_imagenet(args)
 
-    train(args, model, data)
+    train(args, model, data, name)
 
     sys.exit(0)
 
 
 def resnet18_main():
-    return generic_main(resnet.resnet18)
+    return generic_main(resnet.resnet18, 'resnet18')
 
 
 def resnet50_main():
-    return generic_main(resnet.resnet50)
+    return generic_main(resnet.resnet50, 'resnet50')
 
 
 if __name__ == '__main__':
