@@ -1,5 +1,8 @@
 #!/bin/sh
 
+nohup rsync -ax -e /data/lisa/data/ImageNet2012_jpeg/* /Tmp/delaunap/img_net/ &
+
+DATA_LOCATION=/data/lisa/data/ImageNet2012_jpeg/
 DATA_LOCATION=/Tmp/delaunap/img_net/
 ARGS="--gpu --data $DATA_LOCATION --static-loss-scale 128 --prof 10"
 
