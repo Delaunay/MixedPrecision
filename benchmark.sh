@@ -1,16 +1,17 @@
 #!/bin/sh
 
-export  PYTORCH_RESULTS=./results/pytorch/
+DATA_LOCATION=/Tmp/delaunap/img_net/
+ARGS="--gpu --data $DATA_LOCATION --static-loss-scale 128 --prof 10"
 
-mkdir -p $PYTORCH_RESULTS
-mkdir -p ./results/tensorflow/
+BATCH_SIZE="128 256"
+WORKERS="1 2 4 8 16"
 
+for batch in BATCH_SIZE do
+    for worker in WORKERS do
+        resnet-18-pt $ARGS -b $batch -j $worker
+        resnet-18-pt $ARGS -b $batch -j $worker --half
 
-nvprof --log-file $PYTORCH_RESULTS/mnist_full_single.csv --csv mnist-full --epochs 1 --data /data/ --hidden_size 16384 --gpu > $PYTORCH_RESULTS/mnist_full_single.out
-nvprof --log-file $PYTORCH_RESULTS/mnist_full_half.csv --csv mnist-full --epochs 1 --data /data/ --hidden_size 16384 --gpu --half > $PYTORCH_RESULTS/mnist_full_half.out
-
-nvprof --log-file $PYTORCH_RESULTS/mnist_conv_single.csv --csv mnist-conv --epochs 1 --data /data/ --fake_256 --conv_num 128 --gpu > $PYTORCH_RESULTS/mnist_conv_single.out
-nvprof --log-file $PYTORCH_RESULTS/mnist_conv_half.csv --csv mnist-conv --epochs 1 --data /data/ --fake_256 --conv_num 128 --gpu --half > $PYTORCH_RESULTS/mnist_conv_half.out
-
-nvprof --csv --log-file $PYTORCH_RESULTS/resnet18_single.csv resnet-18 --data /data/img_net/ --epochs 1 --gpu > $PYTORCH_RESULTS/resnet.out
-nvprof --csv --log-file $PYTORCH_RESULTS/resnet18_half.csv resnet-18 --data /data/img_net/ --epochs 1 --gpu --half > $PYTORCH_RESULTS/resnet.out
+        resnet-50-pt $ARGS -b $batch -j $worker
+        resnet-50-pt $ARGS -b $batch -j $worker --half
+    done
+done
