@@ -76,4 +76,7 @@ def get_parser():
     parser.add_argument('--batch-reuse', action='store_true', default=False,
                         help='Re use old batch if data loading is slow')
 
+    parser.add_argument('--report', type=str, default=None,
+                        help='File Name to write the report in')
+
     return parser

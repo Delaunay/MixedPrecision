@@ -229,18 +229,24 @@ def train(args, model, dataset, name):
         epoch_compute.update(epoch_compute_end - epoch_compute_start)
 
         if not should_run():
+            import socket
+            hostname = socket.gethostname()
+            current_device = torch.cuda.current_device()
+            gpu = torch.cuda.get_device_name(current_device)
+
             bs = args.batch_size
             report.print_table(
-                ['Metric', 'Average', 'Deviation', 'Min', 'Max', 'half', 'batch', 'workers', 'dali', 'model'], [
-                ['CPU Data loading', data_loading_cpu.avg, data_loading_cpu.sd, data_loading_cpu.min, data_loading_cpu.max, args.half, args.batch_size, args.workers, args.use_dali, name],
-                ['GPU Data Loading', data_loading_gpu.avg, data_loading_gpu.sd, data_loading_gpu.min, data_loading_gpu.max, args.half, args.batch_size, args.workers, args.use_dali, name],
-                ['Waiting for data', data_waiting.avg, data_waiting.sd, data_waiting.min, data_waiting.max, args.half, args.batch_size, args.workers, args.use_dali, name],
-                ['CPU Compute Time', batch_compute.avg, batch_compute.sd, batch_compute.min, batch_compute.max, args.half, args.batch_size, args.workers, args.use_dali, name],
-                ['GPU Compute Time', gpu_compute.avg, gpu_compute.sd, gpu_compute.min, gpu_compute.max, args.half, args.batch_size, args.workers, args.use_dali, name],
-                ['Full Batch Time', full_time.avg, full_time.sd, full_time.min, full_time.max, args.half, args.batch_size, args.workers, args.use_dali, name],
-                ['Compute Speed', bs / batch_compute.avg, 'NA', bs / batch_compute.max, bs / batch_compute.min, args.half, args.batch_size, args.workers, args.use_dali, name],
-                ['Effective Speed', bs / full_time.avg, 'NA', bs / full_time.max, bs / full_time.min, args.half, args.batch_size, args.workers, args.use_dali, name],
-            ])
+                ['Metric', 'Average', 'Deviation', 'Min', 'Max', 'half', 'batch', 'workers', 'dali', 'model', 'hostname', 'GPU'], [
+                ['CPU Data loading (s)', data_loading_cpu.avg, data_loading_cpu.sd, data_loading_cpu.min, data_loading_cpu.max, args.half, args.batch_size, args.workers, args.use_dali, name, hostname, gpu],
+                ['GPU Data Loading (s)', data_loading_gpu.avg, data_loading_gpu.sd, data_loading_gpu.min, data_loading_gpu.max, args.half, args.batch_size, args.workers, args.use_dali, name, hostname, gpu],
+                ['Waiting for data (s)', data_waiting.avg, data_waiting.sd, data_waiting.min, data_waiting.max, args.half, args.batch_size, args.workers, args.use_dali, name, hostname, gpu],
+                # GPU timed on the CPU side
+                # ['CPU Compute Time (s)', batch_compute.avg, batch_compute.sd, batch_compute.min, batch_compute.max, args.half, args.batch_size, args.workers, args.use_dali, name, hostname, gpu],
+                ['GPU Compute Time (s)', gpu_compute.avg, gpu_compute.sd, gpu_compute.min, gpu_compute.max, args.half, args.batch_size, args.workers, args.use_dali, name, hostname, gpu],
+                ['Full Batch Time (s)', full_time.avg, full_time.sd, full_time.min, full_time.max, args.half, args.batch_size, args.workers, args.use_dali, name, hostname, gpu],
+                ['Compute Speed (img/s)', bs / batch_compute.avg, 'NA', bs / batch_compute.max, bs / batch_compute.min, args.half, args.batch_size, args.workers, args.use_dali, name, hostname, gpu],
+                ['Effective Speed (img/s)', bs / full_time.avg, 'NA', bs / full_time.max, bs / full_time.min, args.half, args.batch_size, args.workers, args.use_dali, name, hostname, gpu],
+            ], filename=args.report)
             break
 
 

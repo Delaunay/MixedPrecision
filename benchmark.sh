@@ -1,13 +1,15 @@
 #!/bin/sh
 
-nohup rsync -ax -e /data/lisa/data/ImageNet2012_jpeg/* /Tmp/delaunap/img_net/ &
+rsync -ax -e /data/lisa/data/ImageNet2012_jpeg/* /Tmp/delaunap/img_net/ &
 
 DATA_LOCATION=/data/lisa/data/ImageNet2012_jpeg/
 DATA_LOCATION=/Tmp/delaunap/img_net/
-ARGS="--gpu --data $DATA_LOCATION --static-loss-scale 128 --prof 10"
+REPORT_NAME='report.csv'
+
+ARGS="--gpu --report $REPORT_NAME --data $DATA_LOCATION --static-loss-scale 128 --prof 20"
 
 BATCH_SIZE="128 256"
-WORKERS="1 2 4 8 16"
+WORKERS="1 2 4 8 16 32 64"
 
 for batch in $BATCH_SIZE; do
     for worker in $WORKERS; do

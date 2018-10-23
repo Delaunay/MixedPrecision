@@ -1,4 +1,5 @@
 from typing import *
+import os.path
 
 
 class UnEvenTable(Exception):
@@ -22,8 +23,9 @@ class PrintTable:
         self.col_num = len(self.columns)
         self.check_size()
 
-        self.col_size =self.compute_col_size()
+        self.col_size = self.compute_col_size()
         self.row_size = self.compute_row_size()
+        self.print_fun = print
 
     def check_size(self):
         for row_id, row in enumerate(self.data):
@@ -46,7 +48,7 @@ class PrintTable:
         def max_col(_, col_id, val):
             col_sizes[col_id] = max(col_sizes[col_id], self.compute_val_size(val))
 
-        self.foreach(max_col)
+        self.foreach(max_col, header=True)
         return col_sizes
 
     def compute_row_size(self):
@@ -55,44 +57,63 @@ class PrintTable:
     def aligned_print(self, str, length, align, end=''):
         missing = max(length - len(str), 0)
         if align == 'left':
-            print(str + ' ' * missing + end, end='')
+            self.print_fun(str + ' ' * missing + end, end='')
 
         if align == 'right':
-            print(' ' * missing + str + end, end='')
+            self.print_fun(' ' * missing + str + end, end='')
 
         if align == 'center':
             r = missing // 2
             l = r + missing % 2
-            print(' ' * l + str + ' ' * r + end, end='')
+            self.print_fun(' ' * l + str + ' ' * r + end, end='')
 
         if align is None:
-            print(str + end, end='')
+            self.print_fun(str + end, end='')
 
-    def print(self):
+    def print(self, header=True, mode='csv'):
+        impl = {
+            'csv': self.csv_print,
+            'md': self.markdown_print
+        }
+
+        return impl[mode](header)
+
+    def csv_print(self, header):
+        def simple(rowd_id, col_id, val):
+            end = ','
+            if col_id == len(self.col_size) - 1:
+                end = ''
+
+            self.aligned_print(' ' + self.format_cell(val) + ' ', self.col_size[col_id], 'right', end=end)
+
+        self.foreach(simple, header, beg_row=None, end_row=lambda x: self.print_fun(), after_header=None)
+
+    def markdown_print(self, header):
         def simple(rowd_id, col_id, val):
             self.aligned_print(' ' + self.format_cell(val) + ' ', self.col_size[col_id], 'right', end='|')
 
         def md_header_separator():
             cols = ['-' * (int(size) - 1) + ':' for size in self.col_size]
 
-            print('|' + '|'.join(cols) + '|')
+            self.print_fun('|' + '|'.join(cols) + '|')
 
-        self.foreach(simple,
-                     beg_row=lambda x: print('|', end=''),
-                     end_row=lambda x: print(), after_header=md_header_separator)
+        self.foreach(simple, header,
+                     beg_row=lambda x: self.print_fun('|', end=''),
+                     end_row=lambda x: self.print_fun(), after_header=md_header_separator)
 
-    def foreach(self, fun, beg_row=None, end_row=None, after_header=None):
-        if beg_row is not None:
-            beg_row(-1)
+    def foreach(self, fun, header, beg_row=None, end_row=None, after_header=None):
+        if header:
+            if beg_row is not None:
+                beg_row(-1)
 
-        for col_id, header in enumerate(self.columns):
-            fun(-1, col_id, header)
+            for col_id, header in enumerate(self.columns):
+                fun(-1, col_id, header)
 
-        if end_row is not None:
-            end_row(-1)
+            if end_row is not None:
+                end_row(-1)
 
-        if after_header is not None:
-            after_header()
+            if after_header is not None:
+                after_header()
 
         for row_id, row in enumerate(self.data):
             if beg_row is not None:
@@ -105,8 +126,19 @@ class PrintTable:
                 end_row(row_id)
 
 
-def print_table(cols, data):
-    PrintTable(cols, data).print()
+def print_table(cols, data, filename=None):
+    report = PrintTable(cols, data)
+    report.print()
+
+    if filename is not None:
+        header = not os.path.exists(filename)
+        append_file = open(filename, 'a')
+
+        def new_print(self='', *args, sep=' ', end='\n', file=None):
+            print(self, *args, sep=sep, end=end, file=append_file)
+
+        report.print_fun = new_print
+        report.print(header)
 
 
 if __name__ == '__main__':
@@ -115,3 +147,9 @@ if __name__ == '__main__':
         ['qwerty', 1.23, 4567890],
         ['qwerty', 4567891.23456789, 4567890]
     ]).print()
+
+    print_table(['A', 'B', 'C'], [
+        ['qwerty', 1.23456789, 4567890],
+        ['qwerty', 1.23, 4567890],
+        ['qwerty', 4567891.23456789, 4567890]
+    ], 'test.txt')
