@@ -39,7 +39,7 @@ class TimedImageFolder(TimedDatasetFolder):
 
     def __init__(self, root, transform=None, target_transform=None,
                  loader=data.default_loader):
-        super(TimedImageFolder, self).__init__(root, loader, data.IMG_EXTENSIONS,
+        super(TimedDatasetFolder, self).__init__(root, loader, data.IMG_EXTENSIONS,
                                           transform=transform,
                                           target_transform=target_transform)
         self.imgs = self.samples
