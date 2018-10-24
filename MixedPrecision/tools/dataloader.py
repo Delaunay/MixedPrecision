@@ -9,7 +9,7 @@ class TimedDatasetFolder(data.DatasetFolder):
     """
 
     def __init__(self, root, loader, extensions, transform=None, target_transform=None):
-        super(TimedDatasetFolder).__init__(root, loader, extensions, transform, target_transform)
+        super(TimedDatasetFolder, self).__init__(root, loader, extensions, transform, target_transform)
         self.read_timer = stats.StatStream(drop_first_obs=10)
         self.transform_timer = stats.StatStream(drop_first_obs=10)
 
