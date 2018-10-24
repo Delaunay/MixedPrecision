@@ -138,10 +138,6 @@ def train(args, model, dataset, name):
     data_waiting = StatStream(drop_first_obs=10)
     data_loading_gpu = StatStream(drop_first_obs=10)
     data_loading_cpu = StatStream(drop_first_obs=10)
-
-    data_reading = dataset.dataset.read_timer
-    data_transform = dataset.dataset.transform_timer
-
     full_time = StatStream(drop_first_obs=10)
 
 
@@ -249,6 +245,8 @@ def train(args, model, dataset, name):
 
             bs = args.batch_size
             common = [args.half, args.batch_size, args.workers, args.use_dali, name, hostname, gpu]
+            data_reading = dataset.dataset.read_timer
+            data_transform = dataset.dataset.transform_timer
 
             # Ignored Metric
             #  GPU timed on the CPU side (very close to GPU timing anway)
