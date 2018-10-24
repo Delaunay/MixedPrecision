@@ -133,12 +133,15 @@ def train(args, model, dataset, name):
     epoch_compute = StatStream(drop_first_obs=1)
     batch_compute = StatStream(drop_first_obs=10)
     gpu_compute = StatStream(drop_first_obs=10)
+    compute_speed = StatStream(drop_first_obs=10)
+    effective_speed = StatStream(drop_first_obs=10)
     data_waiting = StatStream(drop_first_obs=1)
     data_loading_gpu = StatStream(drop_first_obs=0)
     data_loading_cpu = StatStream(drop_first_obs=0)
     full_time = StatStream(drop_first_obs=10)
     start_event = torch.cuda.Event(enable_timing=True, blocking=False, interprocess=False)
     end_event = torch.cuda.Event(enable_timing=True, blocking=False, interprocess=False)
+
     floss = float('inf')
 
     mean = utils.enable_half(torch.tensor([0.485 * 255, 0.456 * 255, 0.406 * 255]).float()).view(1, 3, 1, 1)
@@ -207,6 +210,10 @@ def train(args, model, dataset, name):
                 batch_compute_end = time.time()
                 full_time += batch_compute_end - data_time_start
                 batch_compute += batch_compute_end - batch_compute_start
+
+                compute_speed += args.batch_size / (batch_compute_end - batch_compute_start)
+                effective_speed += args.batch_size / (batch_compute_end - data_time_start)
+
                 effective_batch += 1
 
             data_time_start = time.time()
@@ -244,8 +251,10 @@ def train(args, model, dataset, name):
                 # ['CPU Compute Time (s)', batch_compute.avg, batch_compute.sd, batch_compute.min, batch_compute.max, args.half, args.batch_size, args.workers, args.use_dali, name, hostname, gpu],
                 ['GPU Compute Time (s)', gpu_compute.avg, gpu_compute.sd, gpu_compute.min, gpu_compute.max, args.half, args.batch_size, args.workers, args.use_dali, name, hostname, gpu],
                 ['Full Batch Time (s)', full_time.avg, full_time.sd, full_time.min, full_time.max, args.half, args.batch_size, args.workers, args.use_dali, name, hostname, gpu],
-                ['Compute Speed (img/s)', bs / batch_compute.avg, 'NA', bs / batch_compute.max, bs / batch_compute.min, args.half, args.batch_size, args.workers, args.use_dali, name, hostname, gpu],
-                ['Effective Speed (img/s)', bs / full_time.avg, 'NA', bs / full_time.max, bs / full_time.min, args.half, args.batch_size, args.workers, args.use_dali, name, hostname, gpu],
+                # ['Compute Speed (img/s)', bs / batch_compute.avg, 'NA', bs / batch_compute.max, bs / batch_compute.min, args.half, args.batch_size, args.workers, args.use_dali, name, hostname, gpu],
+                # ['Effective Speed (img/s)', bs / full_time.avg, 'NA', bs / full_time.max, bs / full_time.min, args.half, args.batch_size, args.workers, args.use_dali, name, hostname, gpu],
+                ['Compute Speed (img/s)', compute_speed.avg, compute_speed.sd, compute_speed.min, compute_speed.max, args.half, args.batch_size, args.workers, args.use_dali, name, hostname, gpu],
+                ['Effective Speed (img/s)', effective_speed.avg, effective_speed.sd, effective_speed.min, effective_speed.max, args.half, args.batch_size, args.workers, args.use_dali, name, hostname, gpu],
             ], filename=args.report)
             break
 
