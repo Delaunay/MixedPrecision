@@ -25,6 +25,7 @@ class TimedDatasetFolder(data.DatasetFolder):
 
         if self.transform is not None:
             sample = self.transform(sample)
+
         if self.target_transform is not None:
             target = self.target_transform(target)
 
@@ -37,9 +38,8 @@ class TimedDatasetFolder(data.DatasetFolder):
 class TimedImageFolder(TimedDatasetFolder):
     __doc__ = data.ImageFolder.__doc__
 
-    def __init__(self, root, transform=None, target_transform=None,
-                 loader=data.default_loader):
-        super(TimedDatasetFolder, self).__init__(root, loader, data.IMG_EXTENSIONS,
+    def __init__(self, root, transform=None, target_transform=None, loader=data.default_loader):
+        super(TimedImageFolder, self).__init__(root, loader, data.IMG_EXTENSIONS,
                                           transform=transform,
                                           target_transform=target_transform)
         self.imgs = self.samples
