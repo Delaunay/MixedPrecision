@@ -139,8 +139,8 @@ def train(args, model, dataset, name):
     data_loading_gpu = StatStream(drop_first_obs=10)
     data_loading_cpu = StatStream(drop_first_obs=10)
 
-    data_reading = dataset.datasets.read_timer
-    data_transform = dataset.datasets.transform_timer
+    data_reading = dataset.dataset.read_timer
+    data_transform = dataset.dataset.transform_timer
 
     full_time = StatStream(drop_first_obs=10)
 
