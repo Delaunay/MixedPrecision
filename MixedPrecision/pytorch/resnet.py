@@ -252,10 +252,6 @@ def train(args, model, dataset, name):
             #  GPU timed on the CPU side (very close to GPU timing anway)
             # # ['CPU Compute Time (s)] + batch_compute.to_array() + common,
 
-            # Deprecated in favor of the StatStream computed version
-            # # ['Compute Speed (img/s)', bs / batch_compute.avg, 'NA', bs / batch_compute.max, bs / batch_compute.min] + common,
-            # # ['Effective Speed (img/s)', bs / full_time.avg, 'NA', bs / full_time.max, bs / full_time.min] + common,
-
             report.print_table(
                 ['Metric', 'Average', 'Deviation', 'Min', 'Max', 'count', 'half', 'batch', 'workers', 'dali', 'model', 'hostname', 'GPU'], [
                 ['CPU Data loading (s)'] + data_loading_cpu.to_array() + common,
@@ -270,8 +266,8 @@ def train(args, model, dataset, name):
                 # ['Compute Inst Speed (img/s)'] + compute_speed.to_array() + common,
                 # ['Effective Inst Speed (img/s)'] + effective_speed.to_array() + common,
 
-                ['Compute Speed (img/s)', bs / batch_compute.avg, 'NA', bs / batch_compute.max, bs / batch_compute.min] + common,
-                ['Effective Speed (img/s)', bs / full_time.avg, 'NA', bs / full_time.max, bs / full_time.min] + common,
+                ['Compute Speed (img/s)', bs / batch_compute.avg, 'NA', bs / batch_compute.max, bs / batch_compute.min, batch_compute.count] + common,
+                ['Effective Speed (img/s)', bs / full_time.avg, 'NA', bs / full_time.max, bs / full_time.min, batch_compute.count] + common,
 
                 ['Read Time (s)'] + data_reading.to_array() + common,
                 ['Transform Time (s)'] + data_transform.to_array() + common,
