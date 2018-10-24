@@ -133,8 +133,8 @@ def train(args, model, dataset, name):
     epoch_compute = StatStream(drop_first_obs=10)
     batch_compute = StatStream(drop_first_obs=10)
     gpu_compute = StatStream(drop_first_obs=10)
-    compute_speed = StatStream(drop_first_obs=10)
-    effective_speed = StatStream(drop_first_obs=10)
+    # compute_speed = StatStream(drop_first_obs=10)
+    # effective_speed = StatStream(drop_first_obs=10)
     data_waiting = StatStream(drop_first_obs=10)
     data_loading_gpu = StatStream(drop_first_obs=10)
     data_loading_cpu = StatStream(drop_first_obs=10)
@@ -213,8 +213,8 @@ def train(args, model, dataset, name):
                 full_time += batch_compute_end - data_time_start
                 batch_compute += batch_compute_end - batch_compute_start
 
-                compute_speed += args.batch_size / (batch_compute_end - batch_compute_start)
-                effective_speed += args.batch_size / (batch_compute_end - data_time_start)
+                #compute_speed += args.batch_size / (batch_compute_end - batch_compute_start)
+                #effective_speed += args.batch_size / (batch_compute_end - data_time_start)
 
                 effective_batch += 1
 
@@ -266,8 +266,12 @@ def train(args, model, dataset, name):
                 ['GPU Compute Time (s)'] + gpu_compute.to_array() + common,
                 ['Full Batch Time (s)'] + full_time.to_array() + common,
 
-                ['Compute Speed (img/s)'] + compute_speed.to_array() + common,
-                ['Effective Speed (img/s)'] + effective_speed.to_array() + common,
+                #  https://en.wikipedia.org/wiki/Harmonic_mean
+                # ['Compute Inst Speed (img/s)'] + compute_speed.to_array() + common,
+                # ['Effective Inst Speed (img/s)'] + effective_speed.to_array() + common,
+
+                ['Compute Speed (img/s)', bs / batch_compute.avg, 'NA', bs / batch_compute.max, bs / batch_compute.min] + common,
+                ['Effective Speed (img/s)', bs / full_time.avg, 'NA', bs / full_time.max, bs / full_time.min] + common,
 
                 ['Read Time (s)'] + data_reading.to_array() + common,
                 ['Transform Time (s)'] + data_transform.to_array() + common,
