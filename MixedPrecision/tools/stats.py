@@ -46,6 +46,9 @@ class StatStream(object):
         self.min = min(self.min, val)
         self.max = max(self.max, val)
 
+    def to_array(self):
+        return [self.avg, self.sd, self.min, self.max, self.count]
+
     @property
     def val(self) -> float:
         return self.current_obs + self.first_obs

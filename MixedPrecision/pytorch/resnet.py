@@ -136,8 +136,8 @@ def train(args, model, dataset, name):
     compute_speed = StatStream(drop_first_obs=10)
     effective_speed = StatStream(drop_first_obs=10)
     data_waiting = StatStream(drop_first_obs=1)
-    data_loading_gpu = StatStream(drop_first_obs=0)
-    data_loading_cpu = StatStream(drop_first_obs=0)
+    data_loading_gpu = StatStream(drop_first_obs=1)
+    data_loading_cpu = StatStream(drop_first_obs=1)
     full_time = StatStream(drop_first_obs=10)
     start_event = torch.cuda.Event(enable_timing=True, blocking=False, interprocess=False)
     end_event = torch.cuda.Event(enable_timing=True, blocking=False, interprocess=False)
@@ -242,19 +242,31 @@ def train(args, model, dataset, name):
             gpu = torch.cuda.get_device_name(current_device)
 
             bs = args.batch_size
+
+
+            common = [args.half, args.batch_size, args.workers, args.use_dali, name, hostname, gpu]
+
+            # Ignored Metric
+            #  GPU timed on the CPU side (very close to GPU timing anway)
+            # # ['CPU Compute Time (s)] + batch_compute.to_array() + common,
+
+            # Deprecated in favor of the StatStream computed version
+            # # ['Compute Speed (img/s)', bs / batch_compute.avg, 'NA', bs / batch_compute.max, bs / batch_compute.min] + common,
+            # # ['Effective Speed (img/s)', bs / full_time.avg, 'NA', bs / full_time.max, bs / full_time.min] + common,
+
             report.print_table(
-                ['Metric', 'Average', 'Deviation', 'Min', 'Max', 'half', 'batch', 'workers', 'dali', 'model', 'hostname', 'GPU'], [
-                ['CPU Data loading (s)', data_loading_cpu.avg, data_loading_cpu.sd, data_loading_cpu.min, data_loading_cpu.max, args.half, args.batch_size, args.workers, args.use_dali, name, hostname, gpu],
-                ['GPU Data Loading (s)', data_loading_gpu.avg, data_loading_gpu.sd, data_loading_gpu.min, data_loading_gpu.max, args.half, args.batch_size, args.workers, args.use_dali, name, hostname, gpu],
-                ['Waiting for data (s)', data_waiting.avg, data_waiting.sd, data_waiting.min, data_waiting.max, args.half, args.batch_size, args.workers, args.use_dali, name, hostname, gpu],
-                # GPU timed on the CPU side
-                # ['CPU Compute Time (s)', batch_compute.avg, batch_compute.sd, batch_compute.min, batch_compute.max, args.half, args.batch_size, args.workers, args.use_dali, name, hostname, gpu],
-                ['GPU Compute Time (s)', gpu_compute.avg, gpu_compute.sd, gpu_compute.min, gpu_compute.max, args.half, args.batch_size, args.workers, args.use_dali, name, hostname, gpu],
-                ['Full Batch Time (s)', full_time.avg, full_time.sd, full_time.min, full_time.max, args.half, args.batch_size, args.workers, args.use_dali, name, hostname, gpu],
-                # ['Compute Speed (img/s)', bs / batch_compute.avg, 'NA', bs / batch_compute.max, bs / batch_compute.min, args.half, args.batch_size, args.workers, args.use_dali, name, hostname, gpu],
-                # ['Effective Speed (img/s)', bs / full_time.avg, 'NA', bs / full_time.max, bs / full_time.min, args.half, args.batch_size, args.workers, args.use_dali, name, hostname, gpu],
-                ['Compute Speed (img/s)', compute_speed.avg, compute_speed.sd, compute_speed.min, compute_speed.max, args.half, args.batch_size, args.workers, args.use_dali, name, hostname, gpu],
-                ['Effective Speed (img/s)', effective_speed.avg, effective_speed.sd, effective_speed.min, effective_speed.max, args.half, args.batch_size, args.workers, args.use_dali, name, hostname, gpu],
+                ['Metric', 'Average', 'Deviation', 'Min', 'Max', 'count', 'half', 'batch', 'workers', 'dali', 'model', 'hostname', 'GPU'], [
+                ['CPU Data loading (s)'] + data_loading_cpu.to_array() + common,
+
+                ['GPU Data Loading (s)'] + data_loading_gpu.to_array() + common,
+                ['Waiting for data (s)'] + data_waiting.to_array() + common,
+
+                ['GPU Compute Time (s)'] + gpu_compute.to_array() + common,
+                ['Full Batch Time (s)'] + full_time.to_array() + common,
+
+                ['Compute Speed (img/s)'] + compute_speed.to_array() + common,
+                ['Effective Speed (img/s)'] + effective_speed.to_array() + common,
+
             ], filename=args.report)
             break
 
