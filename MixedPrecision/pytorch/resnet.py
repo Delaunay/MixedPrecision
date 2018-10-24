@@ -12,7 +12,7 @@ import MixedPrecision.tools.report as report
 
 import torchvision.models.resnet as resnet
 import torchvision.transforms as transforms
-import torchvision.datasets as datasets
+import MixedPrecision.tools.dataloader as datasets
 
 import math
 
@@ -65,7 +65,7 @@ def load_imagenet(args):
         )
 
     else:
-        train_dataset = datasets.ImageFolder(
+        train_dataset = datasets.TimedImageFolder(
             args.data + '/train/',
             data_transforms)
 
@@ -130,15 +130,21 @@ def train(args, model, dataset, name):
     )
     model.train()
 
-    epoch_compute = StatStream(drop_first_obs=1)
+    epoch_compute = StatStream(drop_first_obs=10)
     batch_compute = StatStream(drop_first_obs=10)
     gpu_compute = StatStream(drop_first_obs=10)
     compute_speed = StatStream(drop_first_obs=10)
     effective_speed = StatStream(drop_first_obs=10)
-    data_waiting = StatStream(drop_first_obs=1)
-    data_loading_gpu = StatStream(drop_first_obs=1)
-    data_loading_cpu = StatStream(drop_first_obs=1)
+    data_waiting = StatStream(drop_first_obs=10)
+    data_loading_gpu = StatStream(drop_first_obs=10)
+    data_loading_cpu = StatStream(drop_first_obs=10)
+
+    data_reading = dataset.datasets.read_timer
+    data_transform = dataset.datasets.transform_timer
+
     full_time = StatStream(drop_first_obs=10)
+
+
     start_event = torch.cuda.Event(enable_timing=True, blocking=False, interprocess=False)
     end_event = torch.cuda.Event(enable_timing=True, blocking=False, interprocess=False)
 
@@ -242,8 +248,6 @@ def train(args, model, dataset, name):
             gpu = torch.cuda.get_device_name(current_device)
 
             bs = args.batch_size
-
-
             common = [args.half, args.batch_size, args.workers, args.use_dali, name, hostname, gpu]
 
             # Ignored Metric
@@ -266,6 +270,9 @@ def train(args, model, dataset, name):
 
                 ['Compute Speed (img/s)'] + compute_speed.to_array() + common,
                 ['Effective Speed (img/s)'] + effective_speed.to_array() + common,
+
+                ['Read Time (s)'] + data_reading.to_array() + common,
+                ['Transform Time (s)'] + data_transform.to_array() + common,
 
             ], filename=args.report)
             break
