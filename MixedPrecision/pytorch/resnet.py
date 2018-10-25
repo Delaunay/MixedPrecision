@@ -87,7 +87,7 @@ def fake_imagenet(args):
 
     return torch.utils.data.DataLoader(
         dataset, batch_size=args.batch_size, pin_memory=True,
-        num_workers=args.workers, shuffle=None, collate_fn=utils.fast_collate
+        num_workers=args.workers, shuffle=None, collate_fn=utils.timed_fast_collate
     )
 
 
@@ -246,6 +246,7 @@ def train(args, model, dataset, name):
             common = [args.half, args.batch_size, args.workers, args.use_dali, name, hostname, gpu]
             data_reading = dataset.dataset.read_timer
             data_transform = dataset.dataset.transform_timer
+            collate_time = utils.fast_collate.time_stream
 
             # Ignored Metric
             #  GPU timed on the CPU side (very close to GPU timing anway)
@@ -253,17 +254,17 @@ def train(args, model, dataset, name):
 
             report.print_table(
                 ['Metric', 'Average', 'Deviation', 'Min', 'Max', 'count', 'half', 'batch', 'workers', 'dali', 'model', 'hostname', 'GPU'], [
-                ['CPU Data loading (s)'] + data_loading_cpu.to_array() + common,
 
-                ['GPU Data Loading (s)'] + data_loading_gpu.to_array() + common,
+                ['Prefetch CPU Data loading (s)'] + data_loading_cpu.to_array() + common,
+                ['Prefetch GPU Data Loading (s)'] + data_loading_gpu.to_array() + common,
                 ['Waiting for data (s)'] + data_waiting.to_array() + common,
 
                 ['GPU Compute Time (s)'] + gpu_compute.to_array() + common,
                 ['Full Batch Time (s)'] + full_time.to_array() + common,
 
                 #  https://en.wikipedia.org/wiki/Harmonic_mean
-                ['Compute Inst Speed (img/s)'] + compute_speed.to_array() + common,
-                ['Effective Inst Speed (img/s)'] + effective_speed.to_array() + common,
+                #['Compute Inst Speed (img/s)'] + compute_speed.to_array() + common,
+                #['Effective Inst Speed (img/s)'] + effective_speed.to_array() + common,
 
                 ['Compute Speed (img/s)', bs / batch_compute.avg, 'NA', bs / batch_compute.max, bs / batch_compute.min, batch_compute.count] + common,
                 ['Effective Speed (img/s)', bs / full_time.avg, 'NA', bs / full_time.max, bs / full_time.min, batch_compute.count] + common,
@@ -271,6 +272,12 @@ def train(args, model, dataset, name):
                 ['Read Time (s)'] + data_reading.to_array() + common,
                 ['Transform Time (s)'] + data_transform.to_array() + common,
 
+                ['Read Speed per process (img/s)', 1.0 / data_reading.avg, 'NA', 1.0 / data_reading.max, 1.0 / data_reading.min, data_reading.count] + common,
+                ['Transform Speed per process  (img/s)', 1.0 / data_transform.avg, 'NA', 1.0 / data_transform.max, 1.0 / data_transform.min, data_transform.count] + common,
+
+                ['Read Speed (img/s)', args.workers / data_reading.avg, 'NA', args.workers / data_reading.max, args.workers / data_reading.min, data_reading.count] + common,
+                ['Transform Speed (img/s)', args.workers / data_transform.avg, 'NA', args.workers / data_transform.max, args.workers / data_transform.min, data_transform.count] + common,
+                ['Image Aggregation (img/s)', bs / collate_time.avg, 'NA', bs / collate_time.max, bs / collate_time.min, collate_time.count] + common,
             ], filename=args.report)
             break
 

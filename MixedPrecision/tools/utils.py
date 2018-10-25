@@ -1,5 +1,6 @@
 import torch
-
+import time
+from MixedPrecision.tools.stats import StatStream
 
 global_use_gpu = False
 global_use_half = False
@@ -102,3 +103,19 @@ def fast_collate(batch):
         tensor[i] += torch.from_numpy(nump_array)
 
     return tensor, targets
+
+
+class TimedFastCollate:
+    def __init__(self, time_stream=StatStream(10)):
+        self.time_stream = time_stream
+
+    def __call__(self, batch):
+        start = time.time()
+        v = fast_collate(batch)
+        end = time.time()
+        self.time_stream += end - start
+        return v
+
+
+timed_fast_collate = TimedFastCollate()
+
