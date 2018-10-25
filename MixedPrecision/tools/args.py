@@ -79,4 +79,7 @@ def get_parser():
     parser.add_argument('--report', type=str, default=None,
                         help='File Name to write the report in')
 
+    parser.add_argument('--accimage', action='store_true', default=False,
+                        help='High performance image loading')
+
     return parser

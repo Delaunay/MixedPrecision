@@ -10,6 +10,7 @@ import torch.utils.data.distributed
 import MixedPrecision.tools.utils as utils
 import MixedPrecision.tools.report as report
 
+import torchvision
 import torchvision.models.resnet as resnet
 import torchvision.transforms as transforms
 import MixedPrecision.tools.dataloader as datasets
@@ -53,6 +54,12 @@ data_transforms = transforms.Compose([
 
 def load_imagenet(args):
     global data_transforms
+
+    if args.accimage:
+        import accimage
+        torchvision.set_image_backend('accimage')
+
+    print('Using `{}` as image loader'.format(torchvision.get_image_backend()))
 
     print('Loading imagenet from {}'.format(args.data))
     if args.use_dali:
@@ -243,7 +250,7 @@ def train(args, model, dataset, name):
             gpu = torch.cuda.get_device_name(current_device)
 
             bs = args.batch_size
-            common = [args.half, args.batch_size, args.workers, args.use_dali, name, hostname, gpu]
+            common = [args.half, args.batch_size, args.workers, args.use_dali, name, hostname, gpu, args.accimage]
             data_reading = dataset.dataset.read_timer
             data_transform = dataset.dataset.transform_timer
             collate_time = utils.fast_collate.time_stream
@@ -253,7 +260,7 @@ def train(args, model, dataset, name):
             # # ['CPU Compute Time (s)] + batch_compute.to_array() + common,
 
             report.print_table(
-                ['Metric', 'Average', 'Deviation', 'Min', 'Max', 'count', 'half', 'batch', 'workers', 'dali', 'model', 'hostname', 'GPU'], [
+                ['Metric', 'Average', 'Deviation', 'Min', 'Max', 'count', 'half', 'batch', 'workers', 'dali', 'model', 'hostname', 'GPU', 'accimage'], [
 
                 ['Prefetch CPU Data loading (s)'] + data_loading_cpu.to_array() + common,
                 ['Prefetch GPU Data Loading (s)'] + data_loading_gpu.to_array() + common,
