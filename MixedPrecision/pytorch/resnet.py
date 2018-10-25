@@ -253,7 +253,7 @@ def train(args, model, dataset, name):
             common = [args.half, args.batch_size, args.workers, args.use_dali, name, hostname, gpu, args.accimage]
             data_reading = dataset.dataset.read_timer
             data_transform = dataset.dataset.transform_timer
-            collate_time = utils.fast_collate.time_stream
+            collate_time = utils.timed_fast_collate.time_stream
 
             # Ignored Metric
             #  GPU timed on the CPU side (very close to GPU timing anway)
