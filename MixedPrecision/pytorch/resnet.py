@@ -286,7 +286,8 @@ def train(args, model, dataset, name):
 
                 ['Read Speed (img/s)', args.workers / data_reading.avg, 'NA', args.workers / data_reading.max, args.workers / data_reading.min, data_reading.count] + common,
                 ['Transform Speed (img/s)', args.workers / data_transform.avg, 'NA', args.workers / data_transform.max, args.workers / data_transform.min, data_transform.count] + common,
-                ['Image Aggregation (img/s)', bs / collate_time.avg, 'NA', bs / collate_time.max, bs / collate_time.min, collate_time.count] + common,
+                ['Image Aggregation Speed (img/s)', bs / collate_time.avg, 'NA', bs / collate_time.max, bs / collate_time.min, collate_time.count] + common,
+                ['Image Aggregation Time (s)', collate_time.avg, collate_time.sd, collate_time.max, collate_time.min, collate_time.count] + common,
             ], filename=args.report)
             break
 
