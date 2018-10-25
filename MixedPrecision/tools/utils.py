@@ -1,4 +1,6 @@
 import torch
+import torch.utils.data.dataloader
+
 import time
 from MixedPrecision.tools.stats import StatStream
 
@@ -68,11 +70,12 @@ def enable_half(object):
     return object.cuda(non_blocking=True)
 
 
-def summary(model, input_size):
+def summary(model, input_size, batch_size):
     try:
         import torchsummary
-        torchsummary.summary(model, input_size)
-    except:
+        torchsummary.summary(model, input_size, batch_size=batch_size)
+    except Exception as e:
+        print(e)
         pass
 
 
@@ -96,7 +99,7 @@ def fast_collate(batch):
         nump_array = np.asarray(img, dtype=np.uint8)
         tens = torch.from_numpy(nump_array)
 
-        if (nump_array.ndim < 3):
+        if nump_array.ndim < 3:
             nump_array = np.expand_dims(nump_array, axis=-1)
 
         nump_array = np.rollaxis(nump_array, 2)
@@ -105,17 +108,49 @@ def fast_collate(batch):
     return tensor, targets
 
 
-class TimedFastCollate:
-    def __init__(self, time_stream=StatStream(10)):
+class TimedCollate:
+    def __init__(self, collate, time_stream=StatStream(10)):
+        self.collate = collate
         self.time_stream = time_stream
 
     def __call__(self, batch):
         start = time.time()
-        v = fast_collate(batch)
+        v = self.collate(batch)
         end = time.time()
         self.time_stream += end - start
         return v
 
 
-timed_fast_collate = TimedFastCollate()
+timed_fast_collate = TimedCollate(collate=fast_collate)
+timed_default_collate = TimedCollate(collate=torch.utils.data.dataloader.default_collate)
+
+
+def bench_collate(collate):
+    import MixedPrecision.tools.report as report
+    from PIL import Image
+
+    x = Image.new('RGB', (224, 224), color = 'red')
+    y = 1
+    bs = 256
+    data = [[x, y] for _ in range(0, bs)]
+    batch = None
+
+    for _ in range(0, 100):
+        batch = collate(data)
+
+    timed = collate.time_stream
+    print(collate.time_stream.to_array())
+    report.print_table(
+        ['Metric', 'Average', 'Deviation', 'Min', 'Max', 'count'],
+        [
+            ['collate_time'] + timed.to_array(),
+            ['collate_speed', bs / timed.avg, 'NA', bs / timed.max, bs / timed.min, timed.count]
+        ]
+    )
+
+
+if __name__ == '__main__':
+    bench_collate(timed_fast_collate)
+    bench_collate(timed_default_collate)
+
 

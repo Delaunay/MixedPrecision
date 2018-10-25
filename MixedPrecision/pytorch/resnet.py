@@ -78,7 +78,7 @@ def load_imagenet(args):
 
         return torch.utils.data.DataLoader(
             train_dataset, batch_size=args.batch_size, shuffle=None,
-            num_workers=args.workers, pin_memory=True, collate_fn=utils.fast_collate)
+            num_workers=args.workers, pin_memory=True, collate_fn=utils.timed_fast_collate)
 
 
 def fake_imagenet(args):
@@ -286,7 +286,7 @@ def train(args, model, dataset, name):
 
                 ['Read Speed (img/s)', args.workers / data_reading.avg, 'NA', args.workers / data_reading.max, args.workers / data_reading.min, data_reading.count] + common,
                 ['Transform Speed (img/s)', args.workers / data_transform.avg, 'NA', args.workers / data_transform.max, args.workers / data_transform.min, data_transform.count] + common,
-                # ['Image Aggregation (img/s)', bs / collate_time.avg, 'NA', bs / collate_time.max, 0, collate_time.count] + common,
+                ['Image Aggregation (img/s)', bs / collate_time.avg, 'NA', bs / collate_time.max, bs / collate_time.min, collate_time.count] + common,
             ], filename=args.report)
             break
 
@@ -317,7 +317,7 @@ def generic_main(make_model, name):
 
     model = make_model()
 
-    summary(model, input_size=(3, 224, 224))
+    summary(model, input_size=(3, 224, 224), batch_size=args.batch_size)
 
     data = None
     if args.fake:
