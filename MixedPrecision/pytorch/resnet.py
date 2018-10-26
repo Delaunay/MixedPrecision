@@ -149,6 +149,7 @@ def train(args, model, dataset, name):
     data_loading_gpu = StatStream(drop_first_obs=10)
     data_loading_cpu = StatStream(drop_first_obs=10)
     full_time = StatStream(drop_first_obs=10)
+    iowait = StatStream(drop_first_obs=10)
 
     start_event = torch.cuda.Event(enable_timing=True, blocking=False, interprocess=False)
     end_event = torch.cuda.Event(enable_timing=True, blocking=False, interprocess=False)
@@ -180,6 +181,7 @@ def train(args, model, dataset, name):
                 gpu_stats=data_loading_gpu
             )
 
+        cpu_times_start = psutil.cpu_times()
         data_time_start = time.time()
         x, y = data.next()
 
@@ -188,7 +190,10 @@ def train(args, model, dataset, name):
 
         while x is not None and should_run():
             data_time_end = time.time()
+            cpu_times_end = psutil.cpu_times()
             data_waiting += (data_time_end - data_time_start)
+            iowait += cpu_times_end.iowait - cpu_times_start.iowait
+
             batch_reuse = 1
 
             # if IO is slow reuse the same batch instead of waiting
@@ -227,6 +232,7 @@ def train(args, model, dataset, name):
 
                 effective_batch += 1
 
+            cpu_times_start = psutil.cpu_times()
             data_time_start = time.time()
             x, y = data.next()
 
@@ -257,9 +263,6 @@ def train(args, model, dataset, name):
             data_transform = dataset.dataset.transform_timer
             collate_time = utils.timed_fast_collate.time_stream
 
-            print(collate_time.to_array())
-            cpu_time = psutil.cpu_times()
-            print(cpu_time)
             print(os.times())
             # Ignored Metric
             #  GPU timed on the CPU side (very close to GPU timing anway)
@@ -292,7 +295,7 @@ def train(args, model, dataset, name):
                 ['Transform Speed (img/s)', args.workers / data_transform.avg, 'NA', args.workers / data_transform.max, args.workers / data_transform.min, data_transform.count] + common,
                 ['Image Aggregation Speed (img/s)', bs / collate_time.avg, 'NA', bs / collate_time.max, bs / collate_time.min, collate_time.count] + common,
                 ['Image Aggregation Time (s)', collate_time.avg, collate_time.sd, collate_time.max, collate_time.min, collate_time.count] + common,
-                ['']
+                ['iowait'] + iowait.to_array() + common
             ], filename=args.report)
             break
 
