@@ -286,17 +286,17 @@ def train(args, model, dataset, name):
                 data_transform = dataset.dataset.transform_timer
                 collate_time = utils.timed_fast_collate.time_stream
 
-                report_data += ['Prefetch CPU Data loading (s)'] + data_loading_cpu.to_array() + common
-                report_data += ['Prefetch GPU Data Loading (s)'] + data_loading_gpu.to_array() + common
-                report_data += ['Read Time (s)'] + data_reading.to_array() + common,
-                report_data += ['Transform Time (s)'] + data_transform.to_array() + common,
-                report_data += ['Read Speed per process (img/s)', 1.0 / data_reading.avg, 'NA', 1.0 / data_reading.max, 1.0 / data_reading.min, data_reading.count] + common,
-                report_data += ['Transform Speed per process  (img/s)', 1.0 / data_transform.avg, 'NA', 1.0 / data_transform.max, 1.0 / data_transform.min, data_transform.count] + common,
+                report_data += [['Prefetch CPU Data loading (s)'] + data_loading_cpu.to_array() + common]
+                report_data += [['Prefetch GPU Data Loading (s)'] + data_loading_gpu.to_array() + common]
+                report_data += [['Read Time (s)'] + data_reading.to_array() + common]
+                report_data += [['Transform Time (s)'] + data_transform.to_array() + common]
+                report_data += [['Read Speed per process (img/s)', 1.0 / data_reading.avg, 'NA', 1.0 / data_reading.max, 1.0 / data_reading.min, data_reading.count] + common]
+                report_data += [['Transform Speed per process  (img/s)', 1.0 / data_transform.avg, 'NA', 1.0 / data_transform.max, 1.0 / data_transform.min, data_transform.count] + common]
 
-                report_data += ['Read Speed (img/s)', args.workers / data_reading.avg, 'NA', args.workers / data_reading.max, args.workers / data_reading.min, data_reading.count] + common,
-                report_data += ['Transform Speed (img/s)', args.workers / data_transform.avg, 'NA', args.workers / data_transform.max, args.workers / data_transform.min, data_transform.count] + common,
-                report_data += ['Image Aggregation Speed (img/s)', bs / collate_time.avg, 'NA', bs / collate_time.max, bs / collate_time.min, collate_time.count] + common,
-                report_data += ['Image Aggregation Time (s)', collate_time.avg, collate_time.sd, collate_time.max, collate_time.min, collate_time.count] + common,
+                report_data += [['Read Speed (img/s)', args.workers / data_reading.avg, 'NA', args.workers / data_reading.max, args.workers / data_reading.min, data_reading.count] + common]
+                report_data += [['Transform Speed (img/s)', args.workers / data_transform.avg, 'NA', args.workers / data_transform.max, args.workers / data_transform.min, data_transform.count] + common]
+                report_data += [['Image Aggregation Speed (img/s)', bs / collate_time.avg, 'NA', bs / collate_time.max, bs / collate_time.min, collate_time.count] + common]
+                report_data += [['Image Aggregation Time (s)', collate_time.avg, collate_time.sd, collate_time.max, collate_time.min, collate_time.count] + common]
 
             print(os.times())
             report.print_table(header, report_data, filename=args.report)
