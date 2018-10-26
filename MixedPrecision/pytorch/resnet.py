@@ -16,6 +16,9 @@ import torchvision.transforms as transforms
 import MixedPrecision.tools.dataloader as datasets
 
 import math
+import socket
+import psutil
+import os
 
 """
 def load_imagenet(args):
@@ -244,7 +247,6 @@ def train(args, model, dataset, name):
         epoch_compute.update(epoch_compute_end - epoch_compute_start)
 
         if not should_run():
-            import socket
             hostname = socket.gethostname()
             current_device = torch.cuda.current_device()
             gpu = torch.cuda.get_device_name(current_device)
@@ -256,7 +258,9 @@ def train(args, model, dataset, name):
             collate_time = utils.timed_fast_collate.time_stream
 
             print(collate_time.to_array())
-
+            cpu_time = psutil.cpu_times()
+            print(cpu_time)
+            print(os.times())
             # Ignored Metric
             #  GPU timed on the CPU side (very close to GPU timing anway)
             # # ['CPU Compute Time (s)] + batch_compute.to_array() + common,
@@ -288,6 +292,7 @@ def train(args, model, dataset, name):
                 ['Transform Speed (img/s)', args.workers / data_transform.avg, 'NA', args.workers / data_transform.max, args.workers / data_transform.min, data_transform.count] + common,
                 ['Image Aggregation Speed (img/s)', bs / collate_time.avg, 'NA', bs / collate_time.max, bs / collate_time.min, collate_time.count] + common,
                 ['Image Aggregation Time (s)', collate_time.avg, collate_time.sd, collate_time.max, collate_time.min, collate_time.count] + common,
+                ['']
             ], filename=args.report)
             break
 
