@@ -259,8 +259,8 @@ def train(args, model, dataset, name):
             gpu = torch.cuda.get_device_name(current_device)
 
             bs = args.batch_size
+            header = ['Metric', 'Average', 'Deviation', 'Min', 'Max', 'count', 'half', 'batch', 'workers', 'dali', 'model', 'hostname', 'GPU', 'accimage']
             common = [args.half, args.batch_size, args.workers, args.use_dali, name, hostname, gpu, args.accimage]
-            header = ['Metric', 'Average', 'Deviation', 'Min', 'Max', 'count', 'half', 'batch', 'workers', 'dali', 'model', 'hostname', 'GPU', 'accimage'],
 
             report_data = [
                 ['Waiting for data (s)'] + data_waiting.to_array() + common,
