@@ -73,7 +73,7 @@ def enable_half(object):
 def summary(model, input_size, batch_size):
     try:
         import torchsummary
-        torchsummary.summary(model, input_size, batch_size=batch_size)
+        torchsummary.summary(model, input_size, batch_size=batch_size, device='cpu')
     except Exception as e:
         print(e)
         pass

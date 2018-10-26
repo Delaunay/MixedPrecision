@@ -181,7 +181,8 @@ def train(args, model, dataset, name):
                 gpu_stats=data_loading_gpu
             )
 
-        cpu_times_start = psutil.cpu_times()
+        # Looks like it only compute for the current process and not the children
+        #cpu_times_start = psutil.cpu_times()
         data_time_start = time.time()
         x, y = data.next()
 
@@ -192,7 +193,7 @@ def train(args, model, dataset, name):
             data_time_end = time.time()
             cpu_times_end = psutil.cpu_times()
             data_waiting += (data_time_end - data_time_start)
-            iowait += cpu_times_end.iowait - cpu_times_start.iowait
+            #iowait += cpu_times_end.iowait - cpu_times_start.iowait
 
             batch_reuse = 1
 
@@ -232,7 +233,7 @@ def train(args, model, dataset, name):
 
                 effective_batch += 1
 
-            cpu_times_start = psutil.cpu_times()
+            #cpu_times_start = psutil.cpu_times()
             data_time_start = time.time()
             x, y = data.next()
 
@@ -259,44 +260,46 @@ def train(args, model, dataset, name):
 
             bs = args.batch_size
             common = [args.half, args.batch_size, args.workers, args.use_dali, name, hostname, gpu, args.accimage]
-            data_reading = dataset.dataset.read_timer
-            data_transform = dataset.dataset.transform_timer
-            collate_time = utils.timed_fast_collate.time_stream
+            header = ['Metric', 'Average', 'Deviation', 'Min', 'Max', 'count', 'half', 'batch', 'workers', 'dali', 'model', 'hostname', 'GPU', 'accimage'],
 
-            print(os.times())
-            # Ignored Metric
-            #  GPU timed on the CPU side (very close to GPU timing anway)
-            # # ['CPU Compute Time (s)] + batch_compute.to_array() + common,
-
-            report.print_table(
-                ['Metric', 'Average', 'Deviation', 'Min', 'Max', 'count', 'half', 'batch', 'workers', 'dali', 'model', 'hostname', 'GPU', 'accimage'], [
-
-                ['Prefetch CPU Data loading (s)'] + data_loading_cpu.to_array() + common,
-                ['Prefetch GPU Data Loading (s)'] + data_loading_gpu.to_array() + common,
+            report_data = [
                 ['Waiting for data (s)'] + data_waiting.to_array() + common,
-
                 ['GPU Compute Time (s)'] + gpu_compute.to_array() + common,
                 ['Full Batch Time (s)'] + full_time.to_array() + common,
-
-                #  https://en.wikipedia.org/wiki/Harmonic_mean
-                #['Compute Inst Speed (img/s)'] + compute_speed.to_array() + common,
-                #['Effective Inst Speed (img/s)'] + effective_speed.to_array() + common,
-
                 ['Compute Speed (img/s)', bs / batch_compute.avg, 'NA', bs / batch_compute.max, bs / batch_compute.min, batch_compute.count] + common,
                 ['Effective Speed (img/s)', bs / full_time.avg, 'NA', bs / full_time.max, bs / full_time.min, batch_compute.count] + common,
+                # Ignored Metric
+                #  GPU timed on the CPU side (very close to GPU timing anway)
+                # # ['CPU Compute Time (s)] + batch_compute.to_array() + common,
 
-                ['Read Time (s)'] + data_reading.to_array() + common,
-                ['Transform Time (s)'] + data_transform.to_array() + common,
+                #  https://en.wikipedia.org/wiki/Harmonic_mean
+                # ['Compute Inst Speed (img/s)'] + compute_speed.to_array() + common,
+                # ['Effective Inst Speed (img/s)'] + effective_speed.to_array() + common,
 
-                ['Read Speed per process (img/s)', 1.0 / data_reading.avg, 'NA', 1.0 / data_reading.max, 1.0 / data_reading.min, data_reading.count] + common,
-                ['Transform Speed per process  (img/s)', 1.0 / data_transform.avg, 'NA', 1.0 / data_transform.max, 1.0 / data_transform.min, data_transform.count] + common,
+                # ['iowait'] + iowait.to_array() + common
+            ]
 
-                ['Read Speed (img/s)', args.workers / data_reading.avg, 'NA', args.workers / data_reading.max, args.workers / data_reading.min, data_reading.count] + common,
-                ['Transform Speed (img/s)', args.workers / data_transform.avg, 'NA', args.workers / data_transform.max, args.workers / data_transform.min, data_transform.count] + common,
-                ['Image Aggregation Speed (img/s)', bs / collate_time.avg, 'NA', bs / collate_time.max, bs / collate_time.min, collate_time.count] + common,
-                ['Image Aggregation Time (s)', collate_time.avg, collate_time.sd, collate_time.max, collate_time.min, collate_time.count] + common,
-                ['iowait'] + iowait.to_array() + common
-            ], filename=args.report)
+            # Dali is just a black box..
+            # no metrics are available
+            if not args.use_dali:
+                data_reading = dataset.dataset.read_timer
+                data_transform = dataset.dataset.transform_timer
+                collate_time = utils.timed_fast_collate.time_stream
+
+                report_data += ['Prefetch CPU Data loading (s)'] + data_loading_cpu.to_array() + common
+                report_data += ['Prefetch GPU Data Loading (s)'] + data_loading_gpu.to_array() + common
+                report_data += ['Read Time (s)'] + data_reading.to_array() + common,
+                report_data += ['Transform Time (s)'] + data_transform.to_array() + common,
+                report_data += ['Read Speed per process (img/s)', 1.0 / data_reading.avg, 'NA', 1.0 / data_reading.max, 1.0 / data_reading.min, data_reading.count] + common,
+                report_data += ['Transform Speed per process  (img/s)', 1.0 / data_transform.avg, 'NA', 1.0 / data_transform.max, 1.0 / data_transform.min, data_transform.count] + common,
+
+                report_data += ['Read Speed (img/s)', args.workers / data_reading.avg, 'NA', args.workers / data_reading.max, args.workers / data_reading.min, data_reading.count] + common,
+                report_data += ['Transform Speed (img/s)', args.workers / data_transform.avg, 'NA', args.workers / data_transform.max, args.workers / data_transform.min, data_transform.count] + common,
+                report_data += ['Image Aggregation Speed (img/s)', bs / collate_time.avg, 'NA', bs / collate_time.max, bs / collate_time.min, collate_time.count] + common,
+                report_data += ['Image Aggregation Time (s)', collate_time.avg, collate_time.sd, collate_time.max, collate_time.min, collate_time.count] + common,
+
+            print(os.times())
+            report.print_table(header, report_data, filename=args.report)
             break
 
 
