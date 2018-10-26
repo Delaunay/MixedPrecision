@@ -11,12 +11,13 @@ ARGS="--gpu --report $REPORT_NAME --data $DATA_LOCATION --static-loss-scale 128 
 BATCH_SIZE="128 256"
 WORKERS="1 2 4 8 16 32 64"
 
+declare -a CONFIG=("" "--half" "--use-dali" "--half --use-dali")
+
 for batch in $BATCH_SIZE; do
     for worker in $WORKERS; do
-        resnet-18-pt $ARGS -b $batch -j $worker
-        resnet-18-pt $ARGS -b $batch -j $worker --half
-
-        resnet-50-pt $ARGS -b $batch -j $worker
-        resnet-50-pt $ARGS -b $batch -j $worker --half
+        for arg_option in "${CONFIG[@]}"; do
+            resnet-18-pt $ARGS -b $batch -j $worker $arg_option
+            resnet-50-pt $ARGS -b $batch -j $worker $arg_option
+        done
     done
 done
