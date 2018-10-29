@@ -16,9 +16,15 @@ CONFIG=("" --half --use-dali --half --use-dali)
 for batch in $BATCH_SIZE; do
     for worker in $WORKERS; do
         for arg_option in "${CONFIG[@]}"; do
-            # echo $arg_option
+
             resnet-18-pt $ARGS -b $batch -j $worker $arg_option
+
+            sleep 5
+
             resnet-50-pt $ARGS -b $batch -j $worker $arg_option
+
+            sleep 5
+
         done
     done
 done

@@ -114,6 +114,7 @@ def train(args, model, dataset, name):
     from MixedPrecision.tools.optimizer import OptimizerAdapter
     from MixedPrecision.tools.stats import StatStream
     from MixedPrecision.tools.prefetcher import DataPreFetcher
+    from MixedPrecision.tools.nvidia_smi import make_monitor
 
     from apex.fp16_utils import network_to_half
 
@@ -161,6 +162,7 @@ def train(args, model, dataset, name):
 
     # Stop after n print when benchmarking (n * batch_count) batch
     print_count = 0
+    gpu_monitor = make_monitor()
 
     def should_run():
         if args.prof is None:
@@ -297,6 +299,8 @@ def train(args, model, dataset, name):
                 report_data += [['Transform Speed (img/s)', args.workers / data_transform.avg, 'NA', args.workers / data_transform.max, args.workers / data_transform.min, data_transform.count] + common]
                 report_data += [['Image Aggregation Speed (img/s)', bs / collate_time.avg, 'NA', bs / collate_time.max, bs / collate_time.min, collate_time.count] + common]
                 report_data += [['Image Aggregation Time (s)', collate_time.avg, collate_time.sd, collate_time.max, collate_time.min, collate_time.count] + common]
+
+                gpu_monitor.report()
 
             print(os.times())
             report.print_table(header, report_data, filename=args.report)

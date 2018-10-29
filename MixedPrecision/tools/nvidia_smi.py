@@ -1,3 +1,5 @@
+from typing import *
+
 import subprocess
 from multiprocessing import Process
 from MixedPrecision.tools.stats import StatStream
@@ -37,6 +39,17 @@ class GpuMonitor:
             self.process = proc
             for line in proc.stdout.readlines():
                 self.parse(line.decode('UTF-8').strip())
+
+    def report(self):
+        import MixedPrecision.tools.report as report
+
+        header = ['Metric', 'Average', 'Deviation', 'Min', 'Max', 'count', 'half']
+        table = []
+
+        for i, stream in enumerate(self.streams):
+            table.append([metrics[i]] + stream.to_array())
+
+        report.print_table(header, table)
 
     def parse(self, line):
         if line == '':
@@ -78,22 +91,23 @@ class GpuMonitor:
             self.process.terminate()
 
 
-def start_monitor(loop_interval, device_id) -> GpuMonitor:
-    monitor = GpuMonitor(loop_interval, device_id)
+def start_monitor(monitor) -> GpuMonitor:
     monitor.run()
     return monitor
 
 
-def make_monitor(loop_interval=1000, device_id=0) -> Process:
-    proc = Process(target=start_monitor, args=(loop_interval, device_id))
+def make_monitor(loop_interval=1000, device_id=0) -> Tuple[Process, GpuMonitor]:
+    monitor = GpuMonitor(loop_interval, device_id)
+    proc = Process(target=start_monitor, args=(monitor,))
     proc.start()
-    return proc
+    return proc, monitor
 
 
 if __name__ == '__main__':
     print('hello')
 
-    make_monitor(loop_interval=1000, device_id=0)
+    proc, mon = make_monitor(loop_interval=1000, device_id=0)
+    print(mon)
     pass
 
 
