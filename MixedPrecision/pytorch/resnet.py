@@ -162,7 +162,7 @@ def train(args, model, dataset, name):
 
     # Stop after n print when benchmarking (n * batch_count) batch
     print_count = 0
-    gpu_monitor = make_monitor()
+    monitor_proc, gpu_monitor = make_monitor()
 
     def should_run():
         if args.prof is None:
@@ -256,6 +256,7 @@ def train(args, model, dataset, name):
         epoch_compute.update(epoch_compute_end - epoch_compute_start)
 
         if not should_run():
+            monitor_proc.terminate()
             hostname = socket.gethostname()
             current_device = torch.cuda.current_device()
             gpu = torch.cuda.get_device_name(current_device)
