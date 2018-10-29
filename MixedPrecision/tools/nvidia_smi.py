@@ -43,7 +43,7 @@ class GpuMonitor:
     def report(self):
         import MixedPrecision.tools.report as report
 
-        header = ['Metric', 'Average', 'Deviation', 'Min', 'Max', 'count', 'half']
+        header = ['Metric', 'Average', 'Deviation', 'Min', 'Max', 'count']
         table = []
 
         for i, stream in enumerate(self.streams):
