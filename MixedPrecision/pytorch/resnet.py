@@ -13,7 +13,9 @@ import MixedPrecision.tools.report as report
 import torchvision
 import torchvision.models.resnet as resnet
 import torchvision.transforms as transforms
+
 import MixedPrecision.tools.dataloader as datasets
+import MixedPrecision.tools.benzina as  benzina
 
 import math
 import socket
@@ -66,6 +68,7 @@ def load_imagenet(args):
 
     print('Loading imagenet from {}'.format(args.data))
     if args.use_dali:
+        print('Using Dali dataloader')
         from MixedPrecision.tools.dali import make_dali_loader
 
         return make_dali_loader(
@@ -73,7 +76,9 @@ def load_imagenet(args):
             args.data + '/train/',
             224
         )
-
+    elif args.benzina:
+        print('Using Benzina dataloader')
+        return benzina.make_data_loader(args)
     else:
         train_dataset = datasets.TimedImageFolder(
             args.data + '/train/',

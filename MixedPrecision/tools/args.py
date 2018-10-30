@@ -85,4 +85,7 @@ def get_parser():
     parser.add_argument('--warmup', action='store_true', default=False,
                         help='do a pre run for benchmarks')
 
+    parser.add_argument('--benzina', action='store_true', default=False,
+                        help='Use benzina')
+
     return parser
