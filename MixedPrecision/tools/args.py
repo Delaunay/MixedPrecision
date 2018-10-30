@@ -82,4 +82,7 @@ def get_parser():
     parser.add_argument('--accimage', action='store_true', default=False,
                         help='High performance image loading')
 
+    parser.add_argument('--warmup', action='store_true', default=False,
+                        help='do a pre run for benchmarks')
+
     return parser

@@ -107,7 +107,8 @@ def current_stream():
     return None
 
 
-def train(args, model, dataset, name):
+# TODO refactor this
+def train(args, model, dataset, name, is_warmup=False):
     import time
 
     import MixedPrecision.tools.utils as utils
@@ -162,150 +163,154 @@ def train(args, model, dataset, name):
 
     # Stop after n print when benchmarking (n * batch_count) batch
     print_count = 0
-    monitor_proc, gpu_monitor = make_monitor()
+    monitor_proc, gpu_monitor = make_monitor(loop_interval=250)
 
     def should_run():
         if args.prof is None:
             return True
         return print_count < args.prof
 
-    for epoch in range(0, args.epochs):
-        epoch_compute_start = time.time()
+    try:
+        for epoch in range(0, args.epochs):
+            epoch_compute_start = time.time()
 
-        # do not prefetch when using dali
-        if args.use_dali:
-            data = dataset
-        else:
-            data = DataPreFetcher(
-                dataset,
-                mean=mean, std=std,
-                cpu_stats=data_loading_cpu,
-                gpu_stats=data_loading_gpu
-            )
+            # do not prefetch when using dali
+            if args.use_dali:
+                data = dataset
+            else:
+                data = DataPreFetcher(
+                    dataset,
+                    mean=mean, std=std,
+                    cpu_stats=data_loading_cpu,
+                    gpu_stats=data_loading_gpu
+                )
 
-        # Looks like it only compute for the current process and not the children
-        #cpu_times_start = psutil.cpu_times()
-        data_time_start = time.time()
-        x, y = data.next()
-
-        batch_count = 0
-        effective_batch = 0
-
-        while x is not None and should_run():
-            data_time_end = time.time()
-            cpu_times_end = psutil.cpu_times()
-            data_waiting += (data_time_end - data_time_start)
-            #iowait += cpu_times_end.iowait - cpu_times_start.iowait
-
-            batch_reuse = 1
-
-            # if IO is slow reuse the same batch instead of waiting
-            if batch_compute.avg > 0 and args.batch_reuse:
-                batch_reuse = int(max(math.floor(data_waiting.avg / batch_compute.avg), 1))
-
-                if batch_reuse > 1:
-                    print('Reusing batch {} times'.format(batch_reuse))
-
-            for i in range(0, batch_reuse):
-                # compute output
-                batch_compute_start = time.time()
-
-                # Compute time using the GPU as well
-                torch.cuda.current_stream().record_event(start_event)
-
-                output = model(x)
-                loss = criterion(output, y.long())
-                floss = loss.item()
-
-                # compute gradient and do SGD step
-                optimizer.zero_grad()
-                optimizer.backward(loss)
-                optimizer.step()
-                torch.cuda.current_stream().record_event(end_event)
-
-                end_event.synchronize()
-                gpu_compute += start_event.elapsed_time(end_event) / 1000.0
-
-                batch_compute_end = time.time()
-                full_time += batch_compute_end - data_time_start
-                batch_compute += batch_compute_end - batch_compute_start
-
-                compute_speed += args.batch_size / (batch_compute_end - batch_compute_start)
-                effective_speed += args.batch_size / (batch_compute_end - data_time_start)
-
-                effective_batch += 1
-
+            # Looks like it only compute for the current process and not the children
             #cpu_times_start = psutil.cpu_times()
             data_time_start = time.time()
             x, y = data.next()
 
-            batch_count += 1
+            batch_count = 0
+            effective_batch = 0
 
-            if effective_batch % 10 == 0:
+            while x is not None and should_run():
+                data_time_end = time.time()
+                cpu_times_end = psutil.cpu_times()
+                data_waiting += (data_time_end - data_time_start)
+                #iowait += cpu_times_end.iowait - cpu_times_start.iowait
 
-                print_count += 1
-                speed_avg = args.batch_size / batch_compute.avg
+                batch_reuse = 1
 
-                print('[{:4d}][{:4d}] '
-                      'Batch Time (avg: {batch_compute.avg:.4f}, sd: {batch_compute.sd:.4f}) ' 
-                      'Speed (avg: {speed:.4f}) '
-                      'Data (avg: {data_waiting.avg:.4f}, sd: {data_waiting.sd:.4f})'.format(
-                        1 + epoch, batch_count, batch_compute=batch_compute, speed=speed_avg, data_waiting=data_waiting))
+                # if IO is slow reuse the same batch instead of waiting
+                if batch_compute.avg > 0 and args.batch_reuse:
+                    batch_reuse = int(max(math.floor(data_waiting.avg / batch_compute.avg), 1))
 
-        epoch_compute_end = time.time()
-        epoch_compute.update(epoch_compute_end - epoch_compute_start)
+                    if batch_reuse > 1:
+                        print('Reusing batch {} times'.format(batch_reuse))
 
-        if not should_run():
-            monitor_proc.terminate()
-            hostname = socket.gethostname()
-            current_device = torch.cuda.current_device()
-            gpu = torch.cuda.get_device_name(current_device)
+                for i in range(0, batch_reuse):
+                    # compute output
+                    batch_compute_start = time.time()
 
-            bs = args.batch_size
-            header = ['Metric', 'Average', 'Deviation', 'Min', 'Max', 'count', 'half', 'batch', 'workers', 'dali', 'model', 'hostname', 'GPU', 'accimage']
-            common = [args.half, args.batch_size, args.workers, args.use_dali, name, hostname, gpu, args.accimage]
+                    # Compute time using the GPU as well
+                    torch.cuda.current_stream().record_event(start_event)
 
-            report_data = [
-                ['Waiting for data (s)'] + data_waiting.to_array() + common,
-                ['GPU Compute Time (s)'] + gpu_compute.to_array() + common,
-                ['Full Batch Time (s)'] + full_time.to_array() + common,
-                ['Compute Speed (img/s)', bs / batch_compute.avg, 'NA', bs / batch_compute.max, bs / batch_compute.min, batch_compute.count] + common,
-                ['Effective Speed (img/s)', bs / full_time.avg, 'NA', bs / full_time.max, bs / full_time.min, batch_compute.count] + common,
-                # Ignored Metric
-                #  GPU timed on the CPU side (very close to GPU timing anway)
-                # # ['CPU Compute Time (s)] + batch_compute.to_array() + common,
+                    output = model(x)
+                    loss = criterion(output, y.long())
+                    floss = loss.item()
 
-                #  https://en.wikipedia.org/wiki/Harmonic_mean
-                # ['Compute Inst Speed (img/s)'] + compute_speed.to_array() + common,
-                # ['Effective Inst Speed (img/s)'] + effective_speed.to_array() + common,
+                    # compute gradient and do SGD step
+                    optimizer.zero_grad()
+                    optimizer.backward(loss)
+                    optimizer.step()
+                    torch.cuda.current_stream().record_event(end_event)
 
-                # ['iowait'] + iowait.to_array() + common
-            ]
+                    end_event.synchronize()
+                    gpu_compute += start_event.elapsed_time(end_event) / 1000.0
 
-            # Dali is just a black box..
-            # no metrics are available
-            if not args.use_dali:
-                data_reading = dataset.dataset.read_timer
-                data_transform = dataset.dataset.transform_timer
-                collate_time = utils.timed_fast_collate.time_stream
+                    batch_compute_end = time.time()
+                    full_time += batch_compute_end - data_time_start
+                    batch_compute += batch_compute_end - batch_compute_start
 
-                report_data += [['Prefetch CPU Data loading (s)'] + data_loading_cpu.to_array() + common]
-                report_data += [['Prefetch GPU Data Loading (s)'] + data_loading_gpu.to_array() + common]
-                report_data += [['Read Time (s)'] + data_reading.to_array() + common]
-                report_data += [['Transform Time (s)'] + data_transform.to_array() + common]
-                report_data += [['Read Speed per process (img/s)', 1.0 / data_reading.avg, 'NA', 1.0 / data_reading.max, 1.0 / data_reading.min, data_reading.count] + common]
-                report_data += [['Transform Speed per process  (img/s)', 1.0 / data_transform.avg, 'NA', 1.0 / data_transform.max, 1.0 / data_transform.min, data_transform.count] + common]
+                    compute_speed += args.batch_size / (batch_compute_end - batch_compute_start)
+                    effective_speed += args.batch_size / (batch_compute_end - data_time_start)
 
-                report_data += [['Read Speed (img/s)', args.workers / data_reading.avg, 'NA', args.workers / data_reading.max, args.workers / data_reading.min, data_reading.count] + common]
-                report_data += [['Transform Speed (img/s)', args.workers / data_transform.avg, 'NA', args.workers / data_transform.max, args.workers / data_transform.min, data_transform.count] + common]
-                report_data += [['Image Aggregation Speed (img/s)', bs / collate_time.avg, 'NA', bs / collate_time.max, bs / collate_time.min, collate_time.count] + common]
-                report_data += [['Image Aggregation Time (s)', collate_time.avg, collate_time.sd, collate_time.max, collate_time.min, collate_time.count] + common]
+                    effective_batch += 1
 
-                gpu_monitor.report()
+                #cpu_times_start = psutil.cpu_times()
+                data_time_start = time.time()
+                x, y = data.next()
 
-            print(os.times())
-            report.print_table(header, report_data, filename=args.report)
-            break
+                batch_count += 1
+
+                if effective_batch % 10 == 0:
+
+                    print_count += 1
+                    speed_avg = args.batch_size / batch_compute.avg
+
+                    print('[{:4d}][{:4d}] '
+                          'Batch Time (avg: {batch_compute.avg:.4f}, sd: {batch_compute.sd:.4f}) ' 
+                          'Speed (avg: {speed:.4f}) '
+                          'Data (avg: {data_waiting.avg:.4f}, sd: {data_waiting.sd:.4f})'.format(
+                            1 + epoch, batch_count, batch_compute=batch_compute, speed=speed_avg, data_waiting=data_waiting))
+
+            epoch_compute_end = time.time()
+            epoch_compute.update(epoch_compute_end - epoch_compute_start)
+
+            if not should_run():
+                monitor_proc.terminate()
+                if not is_warmup:
+                    hostname = socket.gethostname()
+                    current_device = torch.cuda.current_device()
+                    gpu = torch.cuda.get_device_name(current_device)
+
+                    bs = args.batch_size
+                    header = ['Metric', 'Average', 'Deviation', 'Min', 'Max', 'count', 'half', 'batch', 'workers', 'dali', 'model', 'hostname', 'GPU', 'accimage']
+                    common = [args.half, args.batch_size, args.workers, args.use_dali, name, hostname, gpu, args.accimage]
+
+                    report_data = [
+                        ['Waiting for data (s)'] + data_waiting.to_array() + common,
+                        ['GPU Compute Time (s)'] + gpu_compute.to_array() + common,
+                        ['Full Batch Time (s)'] + full_time.to_array() + common,
+                        ['Compute Speed (img/s)', bs / batch_compute.avg, 'NA', bs / batch_compute.max, bs / batch_compute.min, batch_compute.count] + common,
+                        ['Effective Speed (img/s)', bs / full_time.avg, 'NA', bs / full_time.max, bs / full_time.min, batch_compute.count] + common,
+                        # Ignored Metric
+                        #  GPU timed on the CPU side (very close to GPU timing anway)
+                        # # ['CPU Compute Time (s)] + batch_compute.to_array() + common,
+
+                        #  https://en.wikipedia.org/wiki/Harmonic_mean
+                        # ['Compute Inst Speed (img/s)'] + compute_speed.to_array() + common,
+                        # ['Effective Inst Speed (img/s)'] + effective_speed.to_array() + common,
+
+                        # ['iowait'] + iowait.to_array() + common
+                    ]
+
+                    # Dali is just a black box..
+                    # no metrics are available
+                    if not args.use_dali:
+                        data_reading = dataset.dataset.read_timer
+                        data_transform = dataset.dataset.transform_timer
+                        collate_time = utils.timed_fast_collate.time_stream
+
+                        report_data += [['Prefetch CPU Data loading (s)'] + data_loading_cpu.to_array() + common]
+                        report_data += [['Prefetch GPU Data Loading (s)'] + data_loading_gpu.to_array() + common]
+                        report_data += [['Read Time (s)'] + data_reading.to_array() + common]
+                        report_data += [['Transform Time (s)'] + data_transform.to_array() + common]
+                        report_data += [['Read Speed per process (img/s)', 1.0 / data_reading.avg, 'NA', 1.0 / data_reading.max, 1.0 / data_reading.min, data_reading.count] + common]
+                        report_data += [['Transform Speed per process  (img/s)', 1.0 / data_transform.avg, 'NA', 1.0 / data_transform.max, 1.0 / data_transform.min, data_transform.count] + common]
+
+                        report_data += [['Read Speed (img/s)', args.workers / data_reading.avg, 'NA', args.workers / data_reading.max, args.workers / data_reading.min, data_reading.count] + common]
+                        report_data += [['Transform Speed (img/s)', args.workers / data_transform.avg, 'NA', args.workers / data_transform.max, args.workers / data_transform.min, data_transform.count] + common]
+                        report_data += [['Image Aggregation Speed (img/s)', bs / collate_time.avg, 'NA', bs / collate_time.max, bs / collate_time.min, collate_time.count] + common]
+                        report_data += [['Image Aggregation Time (s)', collate_time.avg, collate_time.sd, collate_time.max, collate_time.min, collate_time.count] + common]
+
+                        gpu_monitor.report()
+
+                    print(os.times())
+                    report.print_table(header, report_data, filename=args.report)
+                break
+    finally:
+        monitor_proc.terminate()
 
 
 def generic_main(make_model, name):
@@ -342,7 +347,10 @@ def generic_main(make_model, name):
     else:
         data = load_imagenet(args)
 
-    train(args, model, data, name)
+    if args.warmup:
+        train(args, model, data, name, is_warmup=True)
+
+    train(args, model, data, name, is_warmup=False)
 
     sys.exit(0)
 

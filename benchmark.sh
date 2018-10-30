@@ -11,7 +11,7 @@ ARGS="--gpu --report $REPORT_NAME --data $DATA_LOCATION --static-loss-scale 128 
 BATCH_SIZE="128 256"
 WORKERS="1 2 4 8 16 32 64"
 
-CONFIG=("" --half --use-dali --half --use-dali)
+CONFIG=("" --half --use-dali "--half --use-dali")
 
 for batch in $BATCH_SIZE; do
     for worker in $WORKERS; do

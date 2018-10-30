@@ -35,6 +35,7 @@ class GpuMonitor:
         }
 
     def run(self):
+        print('Running {}'.format([nvidia_smi, query] + self.options))
         with subprocess.Popen([nvidia_smi, query] + self.options, stdout=subprocess.PIPE, bufsize=1) as proc:
             self.process = proc
             for line in proc.stdout.readlines():
