@@ -21,11 +21,12 @@ def dali_folder_visitor(folder) -> List[str]:
     classes = set()
 
     for root, _, files in os.walk(folder):
+        name = root.split('/')[-1]
         if root != folder:
-            classes.add(root.split('/')[-1])
+            classes.add(name)
 
         for item in fnmatch.filter(files, "*"):
-            yield '{} {}'.format(item, len(classes) - 1)
+            yield '{} {}'.format(name + '/' + item, len(classes) - 1)
 
 
 def make_dali_cached_file_list_which_is_also_a_file(data_dir):
