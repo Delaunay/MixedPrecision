@@ -6,10 +6,7 @@ try:
 except ImportError:
     raise ImportError("Please install DALI from https://www.github.com/NVIDIA/DALI to run this example.")
 
-from MixedPrecision.tools.folder import dali_folder_visitor
-import time
-import hashlib
-import os
+from MixedPrecision.tools.folder import make_dali_cached_file_list_which_is_also_a_file
 
 
 class HybridTrainPipe(Pipeline):
@@ -21,20 +18,7 @@ class HybridTrainPipe(Pipeline):
             out_type = types.FLOAT16
 
         print('Reading from {}'.format(data_dir))
-
-        start = time.time()
-        h = hashlib.sha256()
-        h.update(data_dir.encode('utf-8'))
-        file_name = 'tmp_' + h.hexdigest()
-
-        if not os.path.isfile(file_name):
-            images = '\n'.join(dali_folder_visitor(data_dir))
-            file = open(file_name, 'r+')
-            file.write(images)
-            file.close()
-
-        end = time.time()
-        print('Took {} to walk folder'.format(end - start))
+        file_name = make_dali_cached_file_list_which_is_also_a_file(data_dir)
 
         self.input = ops.FileReader(
             file_root=data_dir,

@@ -1,6 +1,8 @@
 from typing import *
 import os
 import fnmatch
+import time
+import hashlib
 
 
 def pytorch_folder_visitor(folder):
@@ -26,7 +28,23 @@ def dali_folder_visitor(folder) -> List[str]:
             yield '{} {}'.format(root + '/' + item, len(classes) - 1)
 
 
-if __name__ == '__main__':
+def make_dali_cached_file_list_which_is_also_a_file(data_dir):
+        start = time.time()
+        h = hashlib.sha256()
+        h.update(data_dir.encode('utf-8'))
+        file_name = 'tmp_' + h.hexdigest()
 
-    img = dali_folder_visitor('/home/user1/test_database/train')
-    print(list(img))
+        if not os.path.isfile(file_name):
+            images = '\n'.join(dali_folder_visitor(data_dir))
+            file = open(file_name, 'w')
+            file.write(images)
+            file.close()
+
+        end = time.time()
+        print('Took {} to walk folder'.format(end - start))
+        return file_name
+
+
+if __name__ == '__main__':
+    img = make_dali_cached_file_list_which_is_also_a_file('/home/user1/test_database/train')
+    print(img)
