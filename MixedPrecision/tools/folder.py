@@ -24,12 +24,10 @@ def dali_folder_visitor(folder) -> List[Tuple[str, int]]:
             classes.add(root.split('/')[-1])
 
         for item in fnmatch.filter(files, "*"):
-            images.append((root + '/' + item, len(classes) - 1))
-
-    return images
+            yield (root + '/' + item, len(classes) - 1)
 
 
 if __name__ == '__main__':
 
     img = dali_folder_visitor('/home/user1/test_database/train')
-    print(img)
+    print(list(img))
