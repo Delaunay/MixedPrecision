@@ -15,16 +15,15 @@ def pytorch_folder_visitor(folder):
     return images, {k: i for i, k in enumerate(classes)}
 
 
-def dali_folder_visitor(folder) -> List[Tuple[str, int]]:
-    images = []
+def dali_folder_visitor(folder) -> List[str]:
     classes = set()
 
-    for root, dir, files in os.walk(folder):
+    for root, _, files in os.walk(folder):
         if root != folder:
             classes.add(root.split('/')[-1])
 
         for item in fnmatch.filter(files, "*"):
-            yield (root + '/' + item, len(classes) - 1)
+            yield '{} {}'.format(root + '/' + item, len(classes) - 1)
 
 
 if __name__ == '__main__':

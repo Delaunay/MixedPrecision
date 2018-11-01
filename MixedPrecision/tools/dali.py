@@ -7,6 +7,9 @@ except ImportError:
     raise ImportError("Please install DALI from https://www.github.com/NVIDIA/DALI to run this example.")
 
 from MixedPrecision.tools.folder import dali_folder_visitor
+import time
+import hashlib
+import os
 
 
 class HybridTrainPipe(Pipeline):
@@ -18,10 +21,24 @@ class HybridTrainPipe(Pipeline):
             out_type = types.FLOAT16
 
         print('Reading from {}'.format(data_dir))
-        images = dali_folder_visitor(data_dir)
+
+        start = time.time()
+        h = hashlib.sha256()
+        h.update(data_dir.encode('utf-8'))
+        file_name = 'tmp_' + h.hexdigest()
+
+        if not os.path.isfile(file_name):
+            images = '\n'.join(dali_folder_visitor(data_dir))
+            file = open(file_name, 'r')
+            file.write(images)
+            file.close()
+
+        end = time.time()
+        print('Took {} to walk folder'.format(end - start))
+
         self.input = ops.FileReader(
-            #file_root=data_dir,
-            file_list=list(images),
+            file_root=data_dir,
+            file_list=file_name,
             shard_id=0,
             num_shards=1,
             random_shuffle=False)
@@ -94,10 +111,9 @@ def make_dali_loader(args, traindir, crop_size, test_run=True):
         start = time.time()
         print('Check Pipe')
         pipe.run()
-
         end = time.time()
+        print('Tool {:.4f}s to build pipe'.format(end - start))
 
-    # print('Data ready {:.4f}s'.format(end - start))
     # DALIClassificationIterator(pipe, size=int(pipe.epoch_size("Reader")))
     return DALISinglePipeAdapter(
         DALIGenericIterator(pipe, ["data", "label"], size=int(pipe.epoch_size("Reader"))))
