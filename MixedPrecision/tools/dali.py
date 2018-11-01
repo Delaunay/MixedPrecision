@@ -6,6 +6,8 @@ try:
 except ImportError:
     raise ImportError("Please install DALI from https://www.github.com/NVIDIA/DALI to run this example.")
 
+from MixedPrecision.tools.folder import dali_folder_visitor
+
 
 class HybridTrainPipe(Pipeline):
     def __init__(self, batch_size, num_threads, device_id, data_dir, crop, half=False):
@@ -16,8 +18,10 @@ class HybridTrainPipe(Pipeline):
             out_type = types.FLOAT16
 
         print('Reading from {}'.format(data_dir))
+        images = dali_folder_visitor(data_dir)
         self.input = ops.FileReader(
-            file_root=data_dir,
+            #file_root=data_dir,
+            file_list=images,
             shard_id=0,
             num_shards=1,
             random_shuffle=False)
@@ -100,6 +104,7 @@ def make_dali_loader(args, traindir, crop_size, test_run=True):
 
 
 if __name__ == '__main__':
+
     pipe = HybridTrainPipe(
         batch_size=256,
         num_threads=8,
