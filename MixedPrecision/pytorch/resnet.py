@@ -309,7 +309,7 @@ def train(args, model, dataset, name, is_warmup=False):
                         report_data += [['Image Aggregation Speed (img/s)', bs / collate_time.avg, 'NA', bs / collate_time.max, bs / collate_time.min, collate_time.count] + common]
                         report_data += [['Image Aggregation Time (s)', collate_time.avg, collate_time.sd, collate_time.max, collate_time.min, collate_time.count] + common]
 
-                    gpu_monitor.report()
+                    report_data.extend(gpu_monitor.arrays(common))
                     report.print_table(header, report_data, filename=args.report)
                 break
     finally:

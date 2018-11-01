@@ -6,7 +6,6 @@ from MixedPrecision.tools.stats import StatStream
 
 nvidia_smi = 'nvidia-smi'
 metrics = [
-    'name',
     'temperature.gpu',
     'utilization.gpu',
     'utilization.memory',
@@ -38,8 +37,12 @@ class GpuMonitor:
         print('Running {}'.format([nvidia_smi, query] + self.options))
         with subprocess.Popen([nvidia_smi, query] + self.options, stdout=subprocess.PIPE, bufsize=1) as proc:
             self.process = proc
-            for line in proc.stdout.readlines():
-                self.parse(line.decode('UTF-8').strip())
+            count = 0
+            while True:
+                line = proc.stdout.readline()
+                if count > 0:
+                    self.parse(line.decode('UTF-8').strip())
+                count += 1
 
     def report(self):
         import MixedPrecision.tools.report as report
@@ -51,6 +54,9 @@ class GpuMonitor:
             table.append([metrics[i]] + stream.to_array())
 
         report.print_table(header, table)
+
+    def arrays(self, common):
+        return [['gpu.' + metrics[i]] + stream.to_array() + common for i, stream in enumerate(self.streams)]
 
     def parse(self, line):
         if line == '':
@@ -81,7 +87,7 @@ class GpuMonitor:
 
     def process_memory(self, index, value):
         try:
-            value, _ = value.trim.split(' ')
+            value, _ = value.strip().split(' ')
             self.process_value(index, value)
         except Exception as e:
             print('Expected value format: `66 Mib` got `{}`'.format(value))

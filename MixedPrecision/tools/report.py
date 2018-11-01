@@ -30,6 +30,7 @@ class PrintTable:
     def check_size(self):
         for row_id, row in enumerate(self.data):
             if len(row) != self.col_num:
+                print(row)
                 raise UnEvenTable('Row ({}) has not the correct number of columns {} != {}'
                                   .format(row_id, len(row), self.col_num))
 
