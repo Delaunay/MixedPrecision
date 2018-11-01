@@ -29,7 +29,7 @@ class HybridTrainPipe(Pipeline):
 
         if not os.path.isfile(file_name):
             images = '\n'.join(dali_folder_visitor(data_dir))
-            file = open(file_name, 'r')
+            file = open(file_name, 'r+')
             file.write(images)
             file.close()
 
