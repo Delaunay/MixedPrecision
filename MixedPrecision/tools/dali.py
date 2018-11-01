@@ -21,7 +21,7 @@ class HybridTrainPipe(Pipeline):
         images = dali_folder_visitor(data_dir)
         self.input = ops.FileReader(
             #file_root=data_dir,
-            file_list=images,
+            file_list=list(images),
             shard_id=0,
             num_shards=1,
             random_shuffle=False)
