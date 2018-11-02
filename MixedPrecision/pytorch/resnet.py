@@ -204,43 +204,34 @@ def train(args, model, dataset, name, is_warmup=False):
                 data_waiting += (data_time_end - data_time_start)
                 #iowait += cpu_times_end.iowait - cpu_times_start.iowait
 
-                batch_reuse = 1
 
-                # if IO is slow reuse the same batch instead of waiting
-                if batch_compute.avg > 0 and args.batch_reuse:
-                    batch_reuse = int(max(math.floor(data_waiting.avg / batch_compute.avg), 1))
+                # compute output
+                batch_compute_start = time.time()
 
-                    if batch_reuse > 1:
-                        print('Reusing batch {} times'.format(batch_reuse))
+                # Compute time using the GPU as well
+                torch.cuda.current_stream().record_event(start_event)
 
-                for i in range(0, batch_reuse):
-                    # compute output
-                    batch_compute_start = time.time()
+                output = model(x)
+                loss = criterion(output, y.long())
+                floss = loss.item()
 
-                    # Compute time using the GPU as well
-                    torch.cuda.current_stream().record_event(start_event)
+                # compute gradient and do SGD step
+                optimizer.zero_grad()
+                optimizer.backward(loss)
+                optimizer.step()
+                torch.cuda.current_stream().record_event(end_event)
 
-                    output = model(x)
-                    loss = criterion(output, y.long())
-                    floss = loss.item()
+                end_event.synchronize()
+                gpu_compute += start_event.elapsed_time(end_event) / 1000.0
 
-                    # compute gradient and do SGD step
-                    optimizer.zero_grad()
-                    optimizer.backward(loss)
-                    optimizer.step()
-                    torch.cuda.current_stream().record_event(end_event)
+                batch_compute_end = time.time()
+                full_time += batch_compute_end - data_time_start
+                batch_compute += batch_compute_end - batch_compute_start
 
-                    end_event.synchronize()
-                    gpu_compute += start_event.elapsed_time(end_event) / 1000.0
+                compute_speed += args.batch_size / (batch_compute_end - batch_compute_start)
+                effective_speed += args.batch_size / (batch_compute_end - data_time_start)
 
-                    batch_compute_end = time.time()
-                    full_time += batch_compute_end - data_time_start
-                    batch_compute += batch_compute_end - batch_compute_start
-
-                    compute_speed += args.batch_size / (batch_compute_end - batch_compute_start)
-                    effective_speed += args.batch_size / (batch_compute_end - data_time_start)
-
-                    effective_batch += 1
+                effective_batch += 1
 
                 #cpu_times_start = psutil.cpu_times()
                 data_time_start = time.time()
@@ -309,6 +300,7 @@ def train(args, model, dataset, name, is_warmup=False):
                         report_data += [['Image Aggregation Speed (img/s)', bs / collate_time.avg, 'NA', bs / collate_time.max, bs / collate_time.min, collate_time.count] + common]
                         report_data += [['Image Aggregation Time (s)', collate_time.avg, collate_time.sd, collate_time.max, collate_time.min, collate_time.count] + common]
 
+                    #gpu_monitor.report()
                     report_data.extend(gpu_monitor.arrays(common))
                     report.print_table(header, report_data, filename=args.report)
                 break
