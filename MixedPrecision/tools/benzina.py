@@ -3,7 +3,7 @@
 def make_data_loader(args, size):
     import benzina.torch
 
-    dataset = benzina.torch.ImageNet(args.data + '/train')
+    dataset = benzina.torch.ImageNet(args.data)
 
     return benzina.torch.NvdecodeDataLoader(
         dataset,
