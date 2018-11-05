@@ -283,7 +283,7 @@ def train(args, model, dataset, name, is_warmup=False):
 
                     # Dali is just a black box..
                     # no metrics are available
-                    if not args.use_dali:
+                    if not (args.use_dali or args.benzina):
                         data_reading = dataset.dataset.read_timer
                         data_transform = dataset.dataset.transform_timer
                         collate_time = utils.timed_fast_collate.time_stream

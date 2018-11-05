@@ -1,10 +1,10 @@
-from MixedPrecision.tools.dataloader import TimedImageFolder
 
 
 def make_data_loader(args, size):
     import benzina.torch
 
-    dataset = TimedImageFolder(args.data)
+    dataset = benzina.torch.ImageNet(args.data + '/train')
+
     return benzina.torch.NvdecodeDataLoader(
         dataset,
         batch_size=args.batch_size,
