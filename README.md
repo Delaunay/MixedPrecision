@@ -197,5 +197,10 @@ The expected speed up gain should be around 2x according to [this][1]
     Data Loading (GPU) (avg: 0.0037, sd: 0.0007)
     [   1] Epoch Time (avg: 26.5653, sd: 0.0000) Batch Time (max: 0.1511, min: 0.0507) Loss: 6.5508
 
+### MISC
 
+
+rsync -ax -e /data/lisa/data/ImageNet2012_h264/* /Tmp/delaunap/img_h264/ &
+
+> resnet-18-pt -j 4 -b 128 --static-loss-scale 128 --data /data/lisa/data/ImageNet2012_h264/ --gpu --prof 10 --benzina
 

@@ -78,7 +78,7 @@ def load_imagenet(args):
         )
     elif args.benzina:
         print('Using Benzina dataloader')
-        return benzina.make_data_loader(args)
+        return benzina.make_data_loader(args, 224)
     else:
         train_dataset = datasets.TimedImageFolder(
             args.data + '/train/',
