@@ -6,6 +6,8 @@ try:
 except ImportError:
     raise ImportError("Please install DALI from https://www.github.com/NVIDIA/DALI to run this example.")
 
+from MixedPrecision.tools.folder import make_dali_cached_file_list_which_is_also_a_file
+
 
 class HybridTrainPipe(Pipeline):
     def __init__(self, batch_size, num_threads, device_id, data_dir, crop, half=False):
@@ -16,8 +18,11 @@ class HybridTrainPipe(Pipeline):
             out_type = types.FLOAT16
 
         print('Reading from {}'.format(data_dir))
+        file_name = make_dali_cached_file_list_which_is_also_a_file(data_dir)
+
         self.input = ops.FileReader(
             file_root=data_dir,
+            file_list=file_name,
             shard_id=0,
             num_shards=1,
             random_shuffle=False)
@@ -90,16 +95,16 @@ def make_dali_loader(args, traindir, crop_size, test_run=True):
         start = time.time()
         print('Check Pipe')
         pipe.run()
-
         end = time.time()
+        print('Tool {:.4f}s to build pipe'.format(end - start))
 
-    # print('Data ready {:.4f}s'.format(end - start))
     # DALIClassificationIterator(pipe, size=int(pipe.epoch_size("Reader")))
     return DALISinglePipeAdapter(
         DALIGenericIterator(pipe, ["data", "label"], size=int(pipe.epoch_size("Reader"))))
 
 
 if __name__ == '__main__':
+
     pipe = HybridTrainPipe(
         batch_size=256,
         num_threads=8,

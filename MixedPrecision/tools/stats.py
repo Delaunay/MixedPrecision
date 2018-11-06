@@ -94,7 +94,9 @@ class StatStream(object):
         self.struct.min = min(self.min, val)
         self.struct.max = max(self.max, val)
 
-    def to_array(self):
+    def to_array(self, transform=None):
+        if transform is not None:
+            return [transform(self.avg), 'NA', transform(self.min), transform(self.max), self.count]
         return [self.avg, self.sd, self.min, self.max, self.count]
 
     @property
