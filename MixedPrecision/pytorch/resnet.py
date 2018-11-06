@@ -7,12 +7,14 @@ import torch.optim
 import torch.utils.data
 import torch.utils.data.distributed
 
-import MixedPrecision.tools.utils as utils
-import MixedPrecision.tools.report as report
-
 import torchvision
 import torchvision.models.resnet as resnet
 import torchvision.transforms as transforms
+
+import MixedPrecision.tools.utils as utils
+import MixedPrecision.tools.report as report
+
+
 
 import MixedPrecision.tools.dataloader as datasets
 import MixedPrecision.tools.benzina as  benzina

@@ -1,5 +1,6 @@
 import torch
 import time
+from multiprocessing import Process, Manager
 
 import MixedPrecision.tools.utils as utils
 from MixedPrecision.tools.stats import StatStream
@@ -76,3 +77,60 @@ class DataPreFetcher:
         # Start fetching next
         self.preload()
         return input, target
+
+
+def prefetch(work, results, loader, stats):
+    while True:
+        message = work.get()
+
+        if message == 'next':
+            try:
+                s = time.time()
+                results.put(next(loader))
+                stats += time.time() - s
+            except StopIteration:
+                results.put(None)
+                break
+
+        if message == 'stop':
+            break
+
+
+class AsyncPrefetcher:
+    def __init__(self, loader, buffering=2):
+        self.loader = loader
+        self.data = None
+        self.loading_stat = StatStream(1)
+        self.wait_time = StatStream(1)
+        self.manager = Manager()
+        self.work_queue = self.manager.Queue()
+        self.result_queue = self.manager.Queue()
+        self.worker = Process(target=prefetch, args=(self.work_queue, self.result_queue, self.loader, self.loading_stat))
+
+        # put n batch in advance
+        for i in range(buffering):
+            self.work_queue.put('next')
+
+    def preload(self):
+        if self.worker.is_alive():
+            self.work_queue.put('next')
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        s = time.time()
+        data = self.result_queue.get()
+        self.preload()
+
+        if data is None:
+            raise StopIteration
+        self.wait_time += time.time() - s
+        return data
+
+    def __del__(self):
+        self.stop()
+
+    def stop(self):
+        self.work_queue.put('stop')
+        self.worker.join(10)
