@@ -74,7 +74,7 @@ class DALISinglePipeAdapter:
         #   y - 0 -> data 1 -> label
         #   z -  ??
         val = self.iterator.next()
-        return val[0][0][0].cuda(), val[0][1][0].cuda()
+        return val[0][0][0], val[0][1][0]
 
 
 def make_dali_loader(args, traindir, crop_size, test_run=True):

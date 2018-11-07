@@ -1,6 +1,11 @@
 import torch
 import time
-from multiprocessing import Process, Manager
+
+import torch.multiprocessing as mp
+#mp.set_start_method('spawn')
+
+from torch.multiprocessing import Process, Manager
+
 
 import MixedPrecision.tools.utils as utils
 from MixedPrecision.tools.stats import StatStream
@@ -10,7 +15,9 @@ class DataPreFetcher:
     """
         Adapted From Apex from NVIDIA
 
-        Prefetch data async, normalize it, and send it to cuda in the correct format (f16 or f32)
+        Prefetch data 'async', normalize it, and send it to cuda in the correct format (f16 or f32)
+        the most time is passed on the CPU so this prefetcher is not great.
+        I think the Async one is going to be better
     """
     def __init__(self, loader, mean , std, cpu_stats=StatStream(0), gpu_stats=StatStream(0)):
         print('Using Prefetcher')
@@ -106,6 +113,7 @@ class AsyncPrefetcher:
         self.work_queue = self.manager.Queue()
         self.result_queue = self.manager.Queue()
         self.worker = Process(target=prefetch, args=(self.work_queue, self.result_queue, self.loader, self.loading_stat))
+        self.worker.start()
 
         # put n batch in advance
         for i in range(buffering):
@@ -126,7 +134,9 @@ class AsyncPrefetcher:
         if data is None:
             raise StopIteration
         self.wait_time += time.time() - s
-        return data
+        return data[0].cuda(), data[1].cuda()
+
+    next = __next__
 
     def __del__(self):
         self.stop()

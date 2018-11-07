@@ -1,3 +1,5 @@
+import torch.multiprocessing as mp
+
 import torch
 import torch.nn as nn
 import torch.nn.parallel
@@ -14,10 +16,9 @@ import torchvision.transforms as transforms
 import MixedPrecision.tools.utils as utils
 import MixedPrecision.tools.report as report
 
-
-
 import MixedPrecision.tools.dataloader as datasets
-import MixedPrecision.tools.benzina as  benzina
+import MixedPrecision.tools.benzina as benzina
+from MixedPrecision.tools.fakeit import TarDataset
 
 import math
 import socket
@@ -75,7 +76,7 @@ def load_imagenet(args):
 
         return make_dali_loader(
             args,
-            args.data + '/train/',
+            args.data,
             224
         )
     elif args.benzina:
@@ -83,7 +84,7 @@ def load_imagenet(args):
         return benzina.make_data_loader(args, 224)
     else:
         train_dataset = datasets.TimedImageFolder(
-            args.data + '/train/',
+            args.data,
             data_transforms)
 
         return torch.utils.data.DataLoader(
@@ -122,6 +123,7 @@ def train(args, model, dataset, name, is_warmup=False):
     from MixedPrecision.tools.optimizer import OptimizerAdapter
     from MixedPrecision.tools.stats import StatStream
     from MixedPrecision.tools.prefetcher import DataPreFetcher
+    from MixedPrecision.tools.prefetcher import AsyncPrefetcher
     from MixedPrecision.tools.nvidia_smi import make_monitor
 
     from apex.fp16_utils import network_to_half
@@ -191,6 +193,8 @@ def train(args, model, dataset, name, is_warmup=False):
                     cpu_stats=data_loading_cpu,
                     gpu_stats=data_loading_gpu
                 )
+
+            #data = AsyncPrefetcher(data, 3)
 
             # Looks like it only compute for the current process and not the children
             #cpu_times_start = psutil.cpu_times()
@@ -367,4 +371,7 @@ def resnet50_main():
 
 
 if __name__ == '__main__':
+    print(mp.get_start_method())
+    #mp.set_start_method('spawn')
+
     resnet18_main()

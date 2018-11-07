@@ -3,6 +3,8 @@ import MixedPrecision.tools.stats as stats
 import time
 
 
+
+
 class TimedDatasetFolder:
     """
         A Specialized Version for torchvision datasetFolder that times the time spent transforming the inputs
