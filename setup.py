@@ -32,7 +32,10 @@ if __name__ == '__main__':
                 'resnet-50-pt = MixedPrecision.pytorch.resnet:resnet50_main',
 
                 # Tensorflow
-                'mnist-full-tf = MixedPrecision.tensorflow.mnist_fully_connected:main'
+                'mnist-full-tf = MixedPrecision.tensorflow.mnist_fully_connected:main',
+
+                # Data Loader Benchmark
+                'benchloader = MixedPrecision.tools.loaders:main'
             ]
         }
     )
