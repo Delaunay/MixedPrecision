@@ -154,8 +154,8 @@ def benchmark_loader(args):
     }
 
     data = loader[args.loader](args)
-    stat = StatStream(1)
-    prof = args.prof
+    stat = StatStream(20)
+    prof = max(args.prof, 20 * 2)
 
     print('Starting..')
 
