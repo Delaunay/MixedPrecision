@@ -174,7 +174,7 @@ def benchmark_loader(args):
             break
 
         if stat.avg > 0:
-            print('[{:4d}] {:.4f} img/s'.format(j, args.batch_size * prof / stat.avg))
+            print('[{:4d}] {:.4f} img/s'.format(j, args.batch_size / stat.avg))
 
         start = time.time()
 
@@ -190,7 +190,7 @@ def benchmark_loader(args):
         ['Metric', 'Average', 'Deviation', 'Min', 'Max', 'count', 'batch', 'workers', 'loader', 'hostname', 'GPU'],
         [
             ['Load Time (s)'] + stat.to_array() + common,
-            ['Load Speed (img/s)', bs * prof / stat.avg, 'NA', bs * prof / stat.max, bs * prof / stat.min, stat.count] + common
+            ['Load Speed (img/s)', bs / stat.avg, 'NA', bs / stat.max, bs / stat.min, stat.count] + common
         ]
     )
 
