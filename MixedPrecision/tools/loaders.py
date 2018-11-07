@@ -154,6 +154,8 @@ def benchmark_loader(args):
     stat = StatStream(10)
     prof = args.prof
 
+    print('Starting..')
+
     for i in range(0, args.epochs):
         start = time.time()
         for j, (x, y) in enumerate(data):
@@ -163,7 +165,10 @@ def benchmark_loader(args):
         end = time.time()
         stat += end - start
 
-        print('[{:4d}] {:.4f} img /s'.format(i, args.batch_size * prof / stat.avg))
+        if stat.avg > 0:
+            print('[{:4d}] {:.4f} img /s'.format(i, args.batch_size * prof / stat.avg))
+
+    print('Done')
 
     hostname = socket.gethostname()
     current_device = torch.cuda.current_device()
