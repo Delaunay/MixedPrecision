@@ -163,6 +163,8 @@ def benchmark_loader(args):
         end = time.time()
         stat += end - start
 
+        print('[{:4d}] {:.4f} img /s'.format(i, args.batch_size * prof / stat.avg))
+
     hostname = socket.gethostname()
     current_device = torch.cuda.current_device()
     gpu = torch.cuda.get_device_name(current_device)
@@ -173,7 +175,7 @@ def benchmark_loader(args):
         ['Metric', 'Average', 'Deviation', 'Min', 'Max', 'count', 'batch', 'workers', 'loader', 'hostname', 'GPU'],
         [
             ['Load Time (s)'] + stat.to_array() + common,
-            ['Load Speed (img/s)', bs * prof / stat.avg, 'NA', bs * prof / stat.max, bs * prof / stat.min, stat.count]
+            ['Load Speed (img/s)', bs * prof / stat.avg, 'NA', bs * prof / stat.max, bs * prof / stat.min, stat.count] + common
         ]
     )
 
