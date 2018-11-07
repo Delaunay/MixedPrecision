@@ -6,11 +6,6 @@ import torchvision.datasets.folder
 
 
 def pil_loader(file_object):
-    #import io
-    #ImageFile.LOAD_TRUNCATED_IMAGES = True
-    #bytes = io.BytesIO()
-    #bytes.write(file_object.read())
-
     img = Image.open(file_object, 'r')  #.load()
     return img.convert('RGB')
 
@@ -100,26 +95,19 @@ class ZipDataset(Dataset):
         return classes, classes_idx, nfiles
 
     def __getitem__(self, index):
-        try:
-            import io
+        path = self.files[index]
+        target = self.classes_to_idx[path.split('/')[1]]
 
-            path = self.files[index]
-            target = self.classes_to_idx[path.split('/')[1]]
+        file = self.zipfile.open(self.files[index], 'r')
 
-            file = self.zipfile.open(self.files[index], 'r')
+        sample = self.loader(file)
 
-            sample = self.loader(file)
+        if self.x_transform is not None:
+            sample = self.x_transform(sample)
+        if self.y_transform is not None:
+            target = self.y_transform(target)
 
-            if self.x_transform is not None:
-                sample = self.x_transform(sample)
-            if self.y_transform is not None:
-                target = self.y_transform(target)
-
-            #print(sample, target)
-            return sample, target
-        except OSError as e:
-            print('File {} failed to load'.format(self.files[index]))
-            raise e
+        return sample, target
 
     def __len__(self):
         return len(self.files)
