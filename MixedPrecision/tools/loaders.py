@@ -174,7 +174,7 @@ def benchmark_loader(args):
             break
 
         if stat.avg > 0:
-            print('[{:4d}] {:.4f} img/s'.format(i, args.batch_size * prof / stat.avg))
+            print('[{:4d}] {:.4f} img/s'.format(j, args.batch_size * prof / stat.avg))
 
         start = time.time()
 
