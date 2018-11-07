@@ -142,6 +142,9 @@ def benchmark_loader(args):
     from MixedPrecision.tools.stats import StatStream
     import MixedPrecision.tools.report as report
 
+    def ignore(x, y):
+        pass
+
     loader = {
         'torch': default_pytorch_loader,
         'prefetch': prefetch_pytorch_loader,
@@ -156,20 +159,24 @@ def benchmark_loader(args):
 
     print('Starting..')
 
-    for i in range(0, args.epochs):
-        start = time.time()
-        for j, (x, y) in enumerate(data):
-            x = x.cuda()
-            y = y.cuda()
-            
-            if j > prof:
-                break
+    start = time.time()
+
+    for j, (x, y) in enumerate(data):
+        x = x.cuda()
+        y = y.cuda()
+
+        ignore(x, y)
 
         end = time.time()
         stat += end - start
 
+        if j > prof:
+            break
+
         if stat.avg > 0:
             print('[{:4d}] {:.4f} img/s'.format(i, args.batch_size * prof / stat.avg))
+
+        start = time.time()
 
     print('Done')
 
