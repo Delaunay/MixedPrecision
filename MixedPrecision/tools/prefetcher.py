@@ -1,11 +1,7 @@
 import torch
+import torch.multiprocessing as multiprocessing
+
 import time
-
-import torch.multiprocessing as mp
-#mp.set_start_method('spawn')
-
-from torch.multiprocessing import Process, Manager
-
 
 import MixedPrecision.tools.utils as utils
 from MixedPrecision.tools.stats import StatStream
@@ -109,10 +105,12 @@ class AsyncPrefetcher:
         self.data = None
         self.loading_stat = StatStream(1)
         self.wait_time = StatStream(1)
-        self.manager = Manager()
-        self.work_queue = self.manager.Queue()
-        self.result_queue = self.manager.Queue()
-        self.worker = Process(target=prefetch, args=(self.work_queue, self.result_queue, self.loader, self.loading_stat))
+        #self.manager = Manager()
+        #self.work_queue = self.manager.Queue()
+        #self.result_queue = self.manager.Queue()
+        self.work_queue = multiprocessing.SimpleQueue()
+        self.result_queue = multiprocessing.SimpleQueue()
+        self.worker = multiprocessing.Process(target=prefetch, args=(self.work_queue, self.result_queue, self.loader, self.loading_stat))
         self.worker.start()
 
         # put n batch in advance

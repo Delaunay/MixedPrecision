@@ -1,5 +1,3 @@
-import torch.multiprocessing as mp
-
 import torch
 import torch.nn as nn
 import torch.nn.parallel
@@ -123,8 +121,8 @@ def train(args, model, dataset, name, is_warmup=False):
     from MixedPrecision.tools.optimizer import OptimizerAdapter
     from MixedPrecision.tools.stats import StatStream
     from MixedPrecision.tools.prefetcher import DataPreFetcher
-    from MixedPrecision.tools.prefetcher import AsyncPrefetcher
     from MixedPrecision.tools.nvidia_smi import make_monitor
+    from MixedPrecision.tools.prefetcher import AsyncPrefetcher
 
     from apex.fp16_utils import network_to_half
 
@@ -194,7 +192,8 @@ def train(args, model, dataset, name, is_warmup=False):
                     gpu_stats=data_loading_gpu
                 )
 
-            #data = AsyncPrefetcher(data, 3)
+            # data = AsyncPrefetcher(iter(dataset), 3)
+
 
             # Looks like it only compute for the current process and not the children
             #cpu_times_start = psutil.cpu_times()
@@ -371,7 +370,7 @@ def resnet50_main():
 
 
 if __name__ == '__main__':
-    print(mp.get_start_method())
+    # print(mp.get_start_method())
     #mp.set_start_method('spawn')
 
     resnet18_main()
