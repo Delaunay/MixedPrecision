@@ -114,7 +114,6 @@ def ziparchive_loader(args):
         loader,
         mean=mean, std=std,
         cpu_stats=StatStream(drop_first_obs=10),
-        gpu_stats=StatStream(drop_first_obs=10)
     )
 
 
@@ -154,8 +153,8 @@ def benchmark_loader(args):
     }
 
     data = loader[args.loader](args)
-    stat = StatStream(20)
-    prof = max(args.prof, 20 * 2)
+    stat = StatStream(4)
+    prof = args.prof
 
     print('Starting..')
 
