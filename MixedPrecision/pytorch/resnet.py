@@ -7,109 +7,28 @@ import torch.optim
 import torch.utils.data
 import torch.utils.data.distributed
 
-import torchvision
 import torchvision.models.resnet as resnet
-import torchvision.transforms as transforms
 
 import MixedPrecision.tools.utils as utils
 import MixedPrecision.tools.report as report
+from MixedPrecision.tools.prefetcher import DataPreFetcher
 
-import MixedPrecision.tools.dataloader as datasets
-import MixedPrecision.tools.benzina as benzina
-
-import math
 import socket
 import psutil
-import os
-
-"""
-def load_imagenet(args):
-    import torchvision.transforms as transforms
-    from PIL import Image
-
-    normalize = transforms.Normalize(
-        mean=[0.485, 0.456, 0.406],
-        std=[0.229, 0.224, 0.225]
-    )
-
-    transforms = transforms.Compose([
-        transforms.RandomResizedCrop(224),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        normalize,
-    ])
-
-    img = Image.open(args.data + '/train/n01440764/n01440764_8082.JPEG')
-    data = utils.enable_cuda(torch.stack([utils.enable_half(transforms(img)) for i in range(0, args.batch_size)]))
-    data = utils.enable_half(utils.enable_cuda(data))
-
-    target = utils.enable_cuda(torch.tensor([i for i in range(0, args.batch_size)])).long()
-    target = target[torch.randperm(args.batch_size)]
-    target = utils.enable_half(utils.enable_cuda(target))
-    return data, target*/"""
-
-normalize = transforms.Normalize(
-    mean=[0.485, 0.456, 0.406],
-    std=[0.229, 0.224, 0.225]
-)
-
-
-data_transforms = transforms.Compose([
-    transforms.RandomResizedCrop(224),
-    transforms.RandomHorizontalFlip()
-    # transforms.ToTensor(),
-    # normalize,
-    # transforms.Lambda(lambda x: utils.enable_cuda(utils.enable_half(x)))
-])
 
 
 def load_imagenet(args):
-    global data_transforms
+    import MixedPrecision.tools.loaders as loaders
 
-    if args.accimage:
-        import accimage
-        torchvision.set_image_backend('accimage')
+    loader = {
+        'torch': loaders.default_pytorch_loader,
+        'prefetch': loaders.prefetch_pytorch_loader,
+        'benzina': loaders.benzina_loader,
+        'dali': loaders.dali_loader,
+        'zip': loaders.ziparchive_loader
+    }
 
-    print('Using `{}` as image loader'.format(torchvision.get_image_backend()))
-
-    print('Loading imagenet from {}'.format(args.data))
-    if args.use_dali:
-        print('Using Dali dataloader')
-        from MixedPrecision.tools.dali import make_dali_loader
-
-        return make_dali_loader(
-            args,
-            args.data,
-            224
-        )
-    elif args.benzina:
-        print('Using Benzina dataloader')
-        return benzina.make_data_loader(args, 224)
-    else:
-        train_dataset = datasets.TimedImageFolder(
-            args.data,
-            data_transforms)
-
-        return torch.utils.data.DataLoader(
-            train_dataset, batch_size=args.batch_size, shuffle=None,
-            num_workers=args.workers, pin_memory=True, collate_fn=utils.timed_fast_collate)
-
-
-def fake_imagenet(args):
-    from MixedPrecision.tools.fakeit import fakeit
-    global data_transforms
-
-    print('Faking Imagenet data')
-    target_transform = transforms.Compose([
-        transforms.Lambda(lambda x: utils.enable_cuda(x.long()))
-    ])
-
-    dataset = fakeit('pytorch', args.batch_size * 10, (3, 224, 224), 1000, data_transforms, target_transform)
-
-    return torch.utils.data.DataLoader(
-        dataset, batch_size=args.batch_size, pin_memory=True,
-        num_workers=args.workers, shuffle=None, collate_fn=utils.timed_fast_collate
-    )
+    return loader[args.loader](args)
 
 
 def current_stream():
@@ -125,10 +44,7 @@ def train(args, model, dataset, name, is_warmup=False):
     import MixedPrecision.tools.utils as utils
     from MixedPrecision.tools.optimizer import OptimizerAdapter
     from MixedPrecision.tools.stats import StatStream
-    from MixedPrecision.tools.prefetcher import DataPreFetcher
     from MixedPrecision.tools.nvidia_smi import make_monitor
-    from MixedPrecision.tools.prefetcher import AsyncPrefetcher
-    from MixedPrecision.tools.archive import ZipDataset
 
     from apex.fp16_utils import network_to_half
 
@@ -171,9 +87,6 @@ def train(args, model, dataset, name, is_warmup=False):
 
     floss = float('inf')
 
-    mean = utils.enable_half(torch.tensor([0.485 * 255, 0.456 * 255, 0.406 * 255]).float()).view(1, 3, 1, 1)
-    std = utils.enable_half(torch.tensor([0.229 * 255, 0.224 * 255, 0.225 * 255]).float()).view(1, 3, 1, 1)
-
     # Stop after n print when benchmarking (n * batch_count) batch
     print_count = 0
     monitor_proc, gpu_monitor = make_monitor(loop_interval=250)
@@ -187,55 +100,15 @@ def train(args, model, dataset, name, is_warmup=False):
         for epoch in range(0, args.epochs):
             epoch_compute_start = time.time()
 
-            # do not prefetch when using dali
-            if args.use_dali:
-                data = dataset
-            else:
-                data = DataPreFetcher(
-                    dataset,
-                    mean=mean, std=std,
-                    cpu_stats=data_loading_cpu,
-                    gpu_stats=data_loading_gpu
-                )
-
-            # data = AsyncPrefetcher(iter(dataset), 3)
-            #"""
-            dataset = ZipDataset('/media/setepenre/UserData/tmp/fake.zip',
-                transform=transforms.Compose([
-                    transforms.RandomResizedCrop(224),
-                    transforms.RandomHorizontalFlip(),
-                    #transforms.ToTensor(),
-                    #normalize
-                ])
-             )
-
-            data = torch.utils.data.DataLoader(
-                dataset, batch_size=args.batch_size, pin_memory=True,
-                num_workers=args.workers, shuffle=None, collate_fn=utils.timed_fast_collate
-            )
-
-            data = DataPreFetcher(
-                data,
-                mean=mean, std=std,
-                cpu_stats=data_loading_cpu,
-                gpu_stats=data_loading_gpu
-            )#"""
-
-
             # Looks like it only compute for the current process and not the children
-            #cpu_times_start = psutil.cpu_times()
             data_time_start = time.time()
-            x, y = data.next()
 
             batch_count = 0
             effective_batch = 0
 
-            while x is not None and should_run():
+            for index, (x, y) in enumerate(dataset):
                 data_time_end = time.time()
-                cpu_times_end = psutil.cpu_times()
                 data_waiting += (data_time_end - data_time_start)
-                #iowait += cpu_times_end.iowait - cpu_times_start.iowait
-
 
                 # compute output
                 batch_compute_start = time.time()
@@ -267,9 +140,7 @@ def train(args, model, dataset, name, is_warmup=False):
 
                 effective_batch += 1
 
-                #cpu_times_start = psutil.cpu_times()
                 data_time_start = time.time()
-                x, y = data.next()
 
                 batch_count += 1
 
@@ -295,11 +166,7 @@ def train(args, model, dataset, name, is_warmup=False):
                     gpu = torch.cuda.get_device_name(current_device)
 
                     bs = args.batch_size
-                    loader = 'pytorch'
-                    if args.use_dali:
-                        loader = 'dali'
-                    if args.benzina:
-                        loader = 'benzina'
+                    loader = args.loader
 
                     header = ['Metric', 'Average', 'Deviation', 'Min', 'Max', 'count', 'half', 'batch', 'workers', 'loader', 'model', 'hostname', 'GPU', 'accimage']
                     common = [args.half, args.batch_size, args.workers, loader, name, hostname, gpu, args.accimage]
@@ -323,7 +190,7 @@ def train(args, model, dataset, name, is_warmup=False):
 
                     # Dali is just a black box..
                     # no metrics are available
-                    if not (args.use_dali or args.benzina):
+                    if False:
                         data_reading = dataset.dataset.read_timer
                         data_transform = dataset.dataset.transform_timer
                         collate_time = utils.timed_fast_collate.time_stream
@@ -376,11 +243,7 @@ def generic_main(make_model, name):
 
     summary(model, input_size=(3, 224, 224), batch_size=args.batch_size)
 
-    data = None
-    if args.fake:
-        data = fake_imagenet(args)
-    else:
-        data = load_imagenet(args)
+    data = load_imagenet(args)
 
     if args.warmup:
         train(args, model, data, name, is_warmup=True)
@@ -399,7 +262,4 @@ def resnet50_main():
 
 
 if __name__ == '__main__':
-    # print(mp.get_start_method())
-    #mp.set_start_method('spawn')
-
     resnet18_main()

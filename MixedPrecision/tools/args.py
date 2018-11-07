@@ -70,22 +70,16 @@ def get_parser():
     parser.add_argument('--no-bench-mode', action='store_true', default=False,
                         help='disable benchmark mode for cudnn')
 
-    parser.add_argument('--use-dali', action='store_true', default=False,
-                        help='use dali for data loading and pre processing')
-
     parser.add_argument('--batch-reuse', action='store_true', default=False,
                         help='Re use old batch if data loading is slow')
 
     parser.add_argument('--report', type=str, default=None,
                         help='File Name to write the report in')
 
-    parser.add_argument('--accimage', action='store_true', default=False,
-                        help='High performance image loading')
-
     parser.add_argument('--warmup', action='store_true', default=False,
                         help='do a pre run for benchmarks')
 
-    parser.add_argument('--benzina', action='store_true', default=False,
-                        help='Use benzina')
+    parser.add_argument('--loader', type=str, default='pytorch',
+                        help='The kind of loader to use (torch, prefetch, benzina, dali, zip)')
 
     return parser
