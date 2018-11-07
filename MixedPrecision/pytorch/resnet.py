@@ -16,7 +16,6 @@ import MixedPrecision.tools.report as report
 
 import MixedPrecision.tools.dataloader as datasets
 import MixedPrecision.tools.benzina as benzina
-from MixedPrecision.tools.fakeit import TarDataset
 
 import math
 import socket
@@ -48,6 +47,12 @@ def load_imagenet(args):
     target = target[torch.randperm(args.batch_size)]
     target = utils.enable_half(utils.enable_cuda(target))
     return data, target*/"""
+
+normalize = transforms.Normalize(
+    mean=[0.485, 0.456, 0.406],
+    std=[0.229, 0.224, 0.225]
+)
+
 
 data_transforms = transforms.Compose([
     transforms.RandomResizedCrop(224),
@@ -123,6 +128,7 @@ def train(args, model, dataset, name, is_warmup=False):
     from MixedPrecision.tools.prefetcher import DataPreFetcher
     from MixedPrecision.tools.nvidia_smi import make_monitor
     from MixedPrecision.tools.prefetcher import AsyncPrefetcher
+    from MixedPrecision.tools.archive import ZipDataset
 
     from apex.fp16_utils import network_to_half
 
@@ -193,6 +199,27 @@ def train(args, model, dataset, name, is_warmup=False):
                 )
 
             # data = AsyncPrefetcher(iter(dataset), 3)
+            #"""
+            dataset = ZipDataset('/media/setepenre/UserData/tmp/fake.zip',
+                transform=transforms.Compose([
+                    transforms.RandomResizedCrop(224),
+                    transforms.RandomHorizontalFlip(),
+                    #transforms.ToTensor(),
+                    #normalize
+                ])
+             )
+
+            data = torch.utils.data.DataLoader(
+                dataset, batch_size=args.batch_size, pin_memory=True,
+                num_workers=args.workers, shuffle=None, collate_fn=utils.timed_fast_collate
+            )
+
+            data = DataPreFetcher(
+                data,
+                mean=mean, std=std,
+                cpu_stats=data_loading_cpu,
+                gpu_stats=data_loading_gpu
+            )#"""
 
 
             # Looks like it only compute for the current process and not the children
@@ -215,6 +242,8 @@ def train(args, model, dataset, name, is_warmup=False):
 
                 # Compute time using the GPU as well
                 torch.cuda.current_stream().record_event(start_event)
+                x = x.cuda()
+                y = y.cuda()
 
                 output = model(x)
                 loss = criterion(output, y.long())
