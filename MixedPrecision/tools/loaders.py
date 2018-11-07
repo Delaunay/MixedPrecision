@@ -151,7 +151,7 @@ def benchmark_loader(args):
     }
 
     data = loader[args.loader](args)
-    stat = StatStream(10)
+    stat = StatStream(1)
     prof = args.prof
 
     print('Starting..')
@@ -159,6 +159,9 @@ def benchmark_loader(args):
     for i in range(0, args.epochs):
         start = time.time()
         for j, (x, y) in enumerate(data):
+            x = x.cuda()
+            y = y.cuda()
+            
             if j > prof:
                 break
 
@@ -166,7 +169,7 @@ def benchmark_loader(args):
         stat += end - start
 
         if stat.avg > 0:
-            print('[{:4d}] {:.4f} img /s'.format(i, args.batch_size * prof / stat.avg))
+            print('[{:4d}] {:.4f} img/s'.format(i, args.batch_size * prof / stat.avg))
 
     print('Done')
 
