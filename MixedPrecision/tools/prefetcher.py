@@ -86,6 +86,12 @@ class DataPreFetcher:
             self.next_input = self.next_input.sub_(self.mean).div_(self.std)
             self.stream.record_event(self.end_event)
 
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return self.next()
+
     def next(self):
         if self.stream is not None:
             torch.cuda.current_stream().wait_stream(self.stream)
