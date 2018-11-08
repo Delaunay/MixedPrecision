@@ -137,6 +137,8 @@ def prefetch(work, results, loader, stats):
 
 class Worker(threading.Thread):
     def __init__(self, work, results, loader):
+        super().__init__(name='AsyncPrefetcherWorker')
+
         self.work = work
         self.results = results
         self.loader = loader
