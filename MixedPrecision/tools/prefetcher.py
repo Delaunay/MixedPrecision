@@ -137,7 +137,7 @@ def prefetch(work, results, loader, stats):
 
 class AsyncPrefetcher:
     def __init__(self, loader, buffering=2):
-        self.loader = loader
+        self.loader = iter(loader)
         self.data = None
         self.loading_stat = StatStream(1)
         self.wait_time = StatStream(1)
