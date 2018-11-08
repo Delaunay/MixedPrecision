@@ -37,6 +37,26 @@ class DataPreFetcher:
             return torch.cuda.Stream()
         return None
 
+    @property
+    def read_timer(self):
+        if hasattr(self.loader, 'read_timer'):
+            return self.loader.read_timer
+        return None
+
+    @property
+    def transform_timer(self):
+        if hasattr(self.loader, 'read_timer'):
+            return self.loader.transform_timer
+        return None
+
+    @property
+    def load_timer(self):
+        return self.cpu_time
+
+    @property
+    def gpu_timer(self):
+        return self.gpu_time
+
     def preload(self):
         """
             Load data from Pytorch Dataloader and asynchronously send it to the device
@@ -83,6 +103,13 @@ class DataPreFetcher:
 
 
 def prefetch(work, results, loader, stats):
+    import torch
+    import random
+
+    torch.set_num_threads(1)
+    random.seed(0)
+    torch.manual_seed(0)
+
     while True:
         message = work.get()
 
@@ -94,6 +121,9 @@ def prefetch(work, results, loader, stats):
             except StopIteration:
                 results.put(None)
                 break
+            except Exception as e:
+                print(e)
+                raise e
 
         if message == 'stop':
             break
@@ -116,6 +146,22 @@ class AsyncPrefetcher:
         # put n batch in advance
         for i in range(buffering):
             self.work_queue.put('next')
+
+    @property
+    def read_timer(self):
+        if hasattr(self.loader, 'read_timer'):
+            return self.loader.read_timer
+        return None
+
+    @property
+    def transform_timer(self):
+        if hasattr(self.loader, 'read_timer'):
+            return self.loader.transform_timer
+        return None
+
+    @property
+    def wait_timer(self):
+        return self.wait_time
 
     def preload(self):
         if self.worker.is_alive():

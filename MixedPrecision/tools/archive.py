@@ -1,13 +1,15 @@
 import tarfile
 import zipfile
+import time
 from PIL import Image, ImageFile
 from torch.utils.data.dataset import Dataset
-import torchvision.datasets.folder
+from MixedPrecision.tools.stats import StatStream
 
 
 def pil_loader(file_object):
-    img = Image.open(file_object, 'r')  #.load()
-    return img.convert('RGB')
+    img = Image.open(file_object, 'r')
+    img = img.convert('RGB')
+    return img
 
 
 class TarDataset(Dataset):
@@ -73,6 +75,17 @@ class ZipDataset(Dataset):
         self.y_transform = target_transform
         self.classes, self.classes_to_idx, self.files = self.find_classes(self.zipfile.namelist())
 
+        self._read_timer = StatStream(10)
+        self._transform_timer = StatStream(10)
+
+    @property
+    def read_timer(self):
+        return self._read_timer
+
+    @property
+    def transform_timer(self):
+        return self._transform_timer
+
     def find_classes(self, files):
         classes = set()
         classes_idx = {}
@@ -100,13 +113,17 @@ class ZipDataset(Dataset):
 
         file = self.zipfile.open(self.files[index], 'r')
 
+        s = time.time()
         sample = self.loader(file)
+        self._read_timer += time.time() - s
 
+        s = time.time()
         if self.x_transform is not None:
             sample = self.x_transform(sample)
         if self.y_transform is not None:
             target = self.y_transform(target)
 
+        self._transform_timer += time.time() - s
         return sample, target
 
     def __len__(self):

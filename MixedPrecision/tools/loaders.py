@@ -119,7 +119,6 @@ def ziparchive_loader(args):
 
 def fake_imagenet(args):
     from MixedPrecision.tools.fakeit import fakeit
-    global data_transforms
 
     print('Faking Imagenet data')
     target_transform = transforms.Compose([
@@ -139,7 +138,9 @@ def benchmark_loader(args):
     import socket
 
     from MixedPrecision.tools.stats import StatStream
+    from MixedPrecision.tools.prefetcher import AsyncPrefetcher
     import MixedPrecision.tools.report as report
+
 
     def ignore(x, y):
         pass
@@ -153,6 +154,10 @@ def benchmark_loader(args):
     }
 
     data = loader[args.loader](args)
+
+    if args.async:
+        data = AsyncPrefetcher(data, buffering=2)
+
     stat = StatStream(4)
     prof = args.prof
 
@@ -195,6 +200,7 @@ def benchmark_loader(args):
 
 
 def main():
+    import MixedPrecision.tools.utils as utils
     import argparse
 
     parser = argparse.ArgumentParser(description='Data loader Benchmark')
@@ -217,6 +223,13 @@ def main():
     parser.add_argument('--loader', type=str, default='pytorch',
                         help='The kind of loader to use (torch, prefetch, benzina, dali, zip)')
 
+    parser.add_argument('--async', action='store_true', default=False,
+                        help='Use AsyncPrefetcher')
+
     args = parser.parse_args()
+
+    utils.set_use_gpu(True, True)
+    utils.set_use_half(True)
+
     benchmark_loader(args)
 
