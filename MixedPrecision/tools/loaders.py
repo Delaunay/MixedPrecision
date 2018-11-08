@@ -156,6 +156,7 @@ def benchmark_loader(args):
 
     data = loader[args.loader](args)
 
+    # Using a Prefetcher should only speedup things if some kind of computation is done
     if args.async:
         data = AsyncPrefetcher(data, buffering=2)
 
@@ -180,7 +181,7 @@ def benchmark_loader(args):
             break
 
         if stat.avg > 0:
-            print('[{:4d}] {} (avg: {:.4f} img/s)'.format(j, args.batch_size / current_time, args.batch_size / stat.avg))
+            print('[{:4d}] {:.4f} (avg: {:.4f} img/s)'.format(j, args.batch_size / current_time, args.batch_size / stat.avg))
 
         start = time.time()
 

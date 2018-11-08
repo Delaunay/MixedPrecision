@@ -12,7 +12,8 @@ class DataPreFetcher:
         Adapted From Apex from NVIDIA
 
         Prefetch data 'async', normalize it, and send it to cuda in the correct format (f16 or f32)
-        the most time is passed on the CPU so this prefetcher is not great.
+        the most time is passed on the CPU so this prefetcher is not great since CPU = sync code
+        the only async part is the GPU part and it is negligible
         I think the Async one is going to be better
     """
     def __init__(self, loader, mean , std, cpu_stats=StatStream(0), gpu_stats=StatStream(0)):
@@ -135,7 +136,7 @@ def prefetch(work, results, loader, stats):
             break
 
 
-class Worker(threading.Thread):
+class AsyncPrefetcherWorker(threading.Thread):
     def __init__(self, work, results, loader):
         super().__init__(name='AsyncPrefetcherWorker')
 
@@ -149,6 +150,13 @@ class Worker(threading.Thread):
 
 
 class AsyncPrefetcher:
+    """
+        We cannot use multiprocessing here because the DataLoader class is not sharable across processes.
+        So we implement the async behaviour using a Thread.
+        Threads in python are concurrent not parallel. So we hope this will still enable python
+        to prefetch the data while the model is computed on the GPU
+
+    """
     def __init__(self, loader, buffering=2):
         self.loader = iter(loader)
         self.data = None
@@ -161,10 +169,11 @@ class AsyncPrefetcher:
         self.work_queue = multiprocessing.SimpleQueue()
         self.result_queue = multiprocessing.SimpleQueue()
 
+        # MP implementation
         #self.worker = multiprocessing.Process(target=prefetch, args=(self.work_queue, self.result_queue, self.loader, self.loading_stat))
         #self.worker.start()
 
-        self.worker = Worker(self.work_queue, self.result_queue, self.loader)
+        self.worker = AsyncPrefetcherWorker(self.work_queue, self.result_queue, self.loader)
         self.worker.start()
 
         # put n batch in advance
