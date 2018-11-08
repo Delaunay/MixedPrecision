@@ -202,6 +202,13 @@ def benchmark_loader(args):
 
 
 def main():
+    # This does not work but this is what the documentation says to do...
+    try:
+        import torch.multiprocessing as multiprocessing
+        multiprocessing.set_start_method('spawn')
+    except Exception as e:
+        print(e)
+
     import MixedPrecision.tools.utils as utils
     import argparse
 
