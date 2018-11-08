@@ -141,7 +141,6 @@ def benchmark_loader(args):
     from MixedPrecision.tools.prefetcher import AsyncPrefetcher
     import MixedPrecision.tools.report as report
 
-
     def ignore(x, y):
         pass
 
@@ -153,6 +152,8 @@ def benchmark_loader(args):
         'zip': ziparchive_loader
     }
 
+    s = time.time()
+
     data = loader[args.loader](args)
 
     if args.async:
@@ -160,7 +161,7 @@ def benchmark_loader(args):
 
     stat = StatStream(4)
     prof = args.prof
-
+    print('Init time was {:.4f}'.format(time.time() - s))
     print('Starting..')
 
     start = time.time()
@@ -172,13 +173,14 @@ def benchmark_loader(args):
         ignore(x, y)
 
         end = time.time()
-        stat += end - start
+        current_time = end - start
+        stat += current_time
 
         if j > prof:
             break
 
         if stat.avg > 0:
-            print('[{:4d}] {:.4f} img/s'.format(j, args.batch_size / stat.avg))
+            print('[{:4d}] {} (avg: {:.4f} img/s)'.format(j, args.batch_size / current_time, args.batch_size / stat.avg))
 
         start = time.time()
 
