@@ -1,6 +1,6 @@
 import torch
 import torch.multiprocessing as multiprocessing
-
+import threading
 import time
 
 import MixedPrecision.tools.utils as utils
@@ -135,6 +135,17 @@ def prefetch(work, results, loader, stats):
             break
 
 
+class Worker(threading.Thread):
+    def __init__(self, work, results, loader):
+        self.work = work
+        self.results = results
+        self.loader = loader
+        self.stat = StatStream(10)
+
+    def run(self):
+        prefetch(self.work, self.results, self.loader, self.stat)
+
+
 class AsyncPrefetcher:
     def __init__(self, loader, buffering=2):
         self.loader = iter(loader)
@@ -144,9 +155,14 @@ class AsyncPrefetcher:
         #self.manager = Manager()
         #self.work_queue = self.manager.Queue()
         #self.result_queue = self.manager.Queue()
+
         self.work_queue = multiprocessing.SimpleQueue()
         self.result_queue = multiprocessing.SimpleQueue()
-        self.worker = multiprocessing.Process(target=prefetch, args=(self.work_queue, self.result_queue, self.loader, self.loading_stat))
+
+        #self.worker = multiprocessing.Process(target=prefetch, args=(self.work_queue, self.result_queue, self.loader, self.loading_stat))
+        #self.worker.start()
+
+        self.worker = Worker(self.work_queue, self.result_queue, self.loader)
         self.worker.start()
 
         # put n batch in advance
