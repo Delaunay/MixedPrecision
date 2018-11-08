@@ -55,12 +55,6 @@ def get_parser():
     parser.add_argument('--prof', dest='prof', type=int, default=None,
                         help='Only run N iterations for profiling.')
 
-    parser.add_argument('--permute', dest='permute', action='store_true', default=False,
-                        help='Try to permute the tensor to use NHWC instead of NCHW')
-
-    parser.add_argument('--fake', dest='fake', action='store_true', default=False,
-                        help='Generate Random Images')
-
     parser.add_argument('--shape', dest='shape', type=int, nargs='*', default=[1, 28, 28],
                         help='Shape of the randomly generated images')
 
@@ -82,4 +76,7 @@ def get_parser():
     parser.add_argument('--loader', type=str, default='pytorch',
                         help='The kind of loader to use (torch, prefetch, benzina, dali, zip)')
 
+    parser.add_argument('--async', action='store_true', default=False,
+                        help='Use AsyncPrefetcher')
+    
     return parser

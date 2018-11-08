@@ -19,6 +19,7 @@ import psutil
 
 def load_imagenet(args):
     import MixedPrecision.tools.loaders as loaders
+    from MixedPrecision.tools.prefetcher import AsyncPrefetcher
 
     loader = {
         'torch': loaders.default_pytorch_loader,
@@ -28,7 +29,12 @@ def load_imagenet(args):
         'zip': loaders.ziparchive_loader
     }
 
-    return loader[args.loader](args)
+    data = loader[args.loader](args)
+
+    if args.async:
+        data = AsyncPrefetcher(data, buffering=2)
+
+    return data
 
 
 def current_stream():
