@@ -222,6 +222,8 @@ def train(args, model, dataset, name, is_warmup=False):
         report_data.extend(gpu_monitor.arrays(common))
         report.print_table(header, report_data, filename=args.report)
 
+    return
+
 
 def generic_main(make_model, name):
     import sys

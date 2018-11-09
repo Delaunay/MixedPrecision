@@ -45,6 +45,7 @@ class GpuMonitor:
                     if count > 0:
                         self.parse(line.decode('UTF-8').strip())
                     count += 1
+                proc.kill()
         except:
             pass
 
