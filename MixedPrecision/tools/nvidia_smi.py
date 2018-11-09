@@ -23,6 +23,7 @@ class GpuMonitor:
         self.streams = [StatStream(drop_first_obs=2) for _ in metrics]
         self.n = len(metrics)
         self.process = None
+        self.running = True
         self.dispatcher = {
             'name': self.process_ignore,
             'temperature.gpu': self.process_value,
@@ -38,7 +39,7 @@ class GpuMonitor:
         with subprocess.Popen([nvidia_smi, query] + self.options, stdout=subprocess.PIPE, bufsize=1) as proc:
             self.process = proc
             count = 0
-            while True:
+            while self.running:
                 line = proc.stdout.readline()
                 if count > 0:
                     self.parse(line.decode('UTF-8').strip())
@@ -95,6 +96,7 @@ class GpuMonitor:
 
     def stop(self):
         if self.process is not None:
+            self.running = False
             self.process.terminate()
 
 
@@ -108,6 +110,21 @@ def make_monitor(loop_interval=1000, device_id=0) -> Tuple[Process, GpuMonitor]:
     proc = Process(target=start_monitor, args=(monitor,))
     proc.start()
     return proc, monitor
+
+
+class GpuMonitorCtx:
+    def __init__(self, loop_interval=1000, device_id=0):
+        self.loop = loop_interval
+        self.device = device_id
+        self.proc = None
+        self.monitor = None
+
+    def __enter__(self):
+        self.proc, self.monitor = make_monitor(self.loop, self.device)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.monitor.stop()
+        self.proc.terminate()
 
 
 if __name__ == '__main__':

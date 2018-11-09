@@ -66,7 +66,7 @@ class TarDataset(Dataset):
 
 
 class ZipDataset(Dataset):
-    """ Zip files work """
+    """ Zip files work but it cant be accessed in parallel which sucks """
 
     def __init__(self, root, transform=None, target_transform=None,  loader=pil_loader):
         self.zipfile = zipfile.ZipFile(root, 'r')

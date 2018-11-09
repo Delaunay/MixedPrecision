@@ -164,9 +164,11 @@ def train(args, model, dataset, name, is_warmup=False):
                 epoch_compute.update(epoch_compute_end - epoch_compute_start)
 
                 if not should_run():
+                    gpu_monitor.stop()
                     monitor_proc.terminate()
                     break
     finally:
+        gpu_monitor.stop()
         monitor_proc.terminate()
 
     if not is_warmup:
@@ -225,6 +227,7 @@ def generic_main(make_model, name):
     import sys
     from MixedPrecision.tools.args import get_parser
     from MixedPrecision.tools.utils import summary
+    sys.stderr = sys.stdout
 
     torch.manual_seed(0)
     torch.cuda.manual_seed_all(0)
