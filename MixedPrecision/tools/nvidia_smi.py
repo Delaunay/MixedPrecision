@@ -36,14 +36,17 @@ class GpuMonitor:
 
     def run(self):
         print('Running {}'.format([nvidia_smi, query] + self.options))
-        with subprocess.Popen([nvidia_smi, query] + self.options, stdout=subprocess.PIPE, bufsize=1) as proc:
-            self.process = proc
-            count = 0
-            while self.running:
-                line = proc.stdout.readline()
-                if count > 0:
-                    self.parse(line.decode('UTF-8').strip())
-                count += 1
+        try:
+            with subprocess.Popen([nvidia_smi, query] + self.options, stdout=subprocess.PIPE, bufsize=1) as proc:
+                self.process = proc
+                count = 0
+                while self.running:
+                    line = proc.stdout.readline()
+                    if count > 0:
+                        self.parse(line.decode('UTF-8').strip())
+                    count += 1
+        except:
+            pass
 
     def report(self):
         import MixedPrecision.tools.report as report
