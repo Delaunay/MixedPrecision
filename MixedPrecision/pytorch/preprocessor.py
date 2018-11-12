@@ -1,6 +1,7 @@
 import torchvision
 import torchvision.transforms as transforms
 import time
+import os
 
 from MixedPrecision.tools.stats import StatStream
 
@@ -18,7 +19,10 @@ def preprocess(transform, input_folder, output_folder):
         load_time += end - start
 
         class_name = train_dataset.classes[y]
-        out = '{}/{}/{}_{}.jpeg'.format(output_folder, class_name, class_name, index)
+        output_dir = '{}/{}'.format(output_folder, class_name)
+        os.makedirs(output_dir, mode=0o755, exist_ok=True)
+
+        out = '{}/{}_{}.jpeg'.format(output_dir, class_name, class_name, index)
         x.save(out, 'JPEG')
 
         start = time.time()

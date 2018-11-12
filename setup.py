@@ -36,6 +36,9 @@ if __name__ == '__main__':
 
                 # Data Loader Benchmark
                 'benchloader = MixedPrecision.tools.loaders:main'
+
+                # 
+                'imgnet_preprocessor = MixedPrecision.pytorch.preprocessor:main'
             ]
         }
     )
