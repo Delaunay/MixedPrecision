@@ -22,7 +22,7 @@ def preprocess(transform, input_folder, output_folder):
         output_dir = '{}/{}'.format(output_folder, class_name)
         os.makedirs(output_dir, mode=0o755, exist_ok=True)
 
-        out = '{}/{}_{}.jpeg'.format(output_dir, class_name, class_name, index)
+        out = '{}/{}_{}.jpeg'.format(output_dir, class_name, index)
         x.save(out, 'JPEG')
 
         start = time.time()
