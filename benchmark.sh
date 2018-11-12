@@ -17,10 +17,16 @@ for batch in $BATCH_SIZE; do
     for worker in $WORKERS; do
         for arg_option in "${CONFIG[@]}"; do
 
+            sudo sh -c 'echo 1 >/proc/sys/vm/drop_caches'
+            sudo sh -c 'echo 2 >/proc/sys/vm/drop_caches'
+            sudo sh -c 'echo 3 >/proc/sys/vm/drop_caches'
             resnet-18-pt $ARGS -b $batch -j $worker $arg_option
 
             sleep 5
 
+            sudo sh -c 'echo 1 >/proc/sys/vm/drop_caches'
+            sudo sh -c 'echo 2 >/proc/sys/vm/drop_caches'
+            sudo sh -c 'echo 3 >/proc/sys/vm/drop_caches'
             resnet-50-pt $ARGS -b $batch -j $worker $arg_option
 
             sleep 5
