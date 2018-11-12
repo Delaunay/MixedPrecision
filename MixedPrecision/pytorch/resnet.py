@@ -235,7 +235,7 @@ def generic_main(make_model, name):
     args = parser.parse_args()
 
     torch.manual_seed(args.seed)
-    torch.cuda.manual_seed_all(args.sede)
+    torch.cuda.manual_seed_all(args.seed)
 
     utils.set_use_gpu(args.gpu, not args.no_bench_mode)
     utils.set_use_half(args.half)
