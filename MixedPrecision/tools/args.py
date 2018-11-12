@@ -78,5 +78,8 @@ def get_parser():
 
     parser.add_argument('--async', action='store_true', default=False,
                         help='Use AsyncPrefetcher')
-    
+
+    parser.add_argument('--seed', type=int, default=0,
+                        help='seed')
+
     return parser

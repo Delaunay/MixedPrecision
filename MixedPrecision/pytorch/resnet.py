@@ -226,11 +226,11 @@ def generic_main(make_model, name):
     from MixedPrecision.tools.args import get_parser
     from MixedPrecision.tools.utils import summary
 
-    torch.manual_seed(0)
-    torch.cuda.manual_seed_all(0)
-
     parser = get_parser()
     args = parser.parse_args()
+
+    torch.manual_seed(args.seed)
+    torch.cuda.manual_seed_all(args.sede)
 
     utils.set_use_gpu(args.gpu, not args.no_bench_mode)
     utils.set_use_half(args.half)
