@@ -35,7 +35,7 @@ if __name__ == '__main__':
                 'mnist-full-tf = MixedPrecision.tensorflow.mnist_fully_connected:main',
 
                 # Data Loader Benchmark
-                'benchloader = MixedPrecision.tools.loaders:main'
+                'benchloader = MixedPrecision.tools.loaders:main',
 
                 # 
                 'imgnet_preprocessor = MixedPrecision.pytorch.preprocessor:main'
