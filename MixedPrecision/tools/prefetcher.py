@@ -217,6 +217,9 @@ class AsyncPrefetcher:
 
     def __del__(self):
         self.stop()
+        #self.work_queue.close()
+        #self.result_queue.close()
+        #self.work_queue.join_thread()
 
     def stop(self):
         self.work_queue.put('stop')

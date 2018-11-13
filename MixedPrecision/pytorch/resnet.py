@@ -234,6 +234,7 @@ def generic_main(make_model, name):
     parser = get_parser()
     args = parser.parse_args()
 
+    torch.set_num_threads(args.workers)
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
 
