@@ -113,6 +113,9 @@ def train(args, model, dataset, name, is_warmup=False):
             effective_batch = 0
 
             for index, (x, y) in enumerate(dataset):
+                x = x.cuda()
+                y = y.cuda()
+
                 data_time_end = time.time()
                 data_waiting += (data_time_end - data_time_start)
 
@@ -120,9 +123,7 @@ def train(args, model, dataset, name, is_warmup=False):
                 batch_compute_start = time.time()
 
                 # Compute time using the GPU as well
-                torch.cuda.current_stream().record_event(start_event)
-                x = x.cuda()
-                y = y.cuda()
+                # torch.cuda.current_stream().record_event(start_event)
 
                 output = model(x)
                 loss = criterion(output, y.long())
@@ -132,10 +133,9 @@ def train(args, model, dataset, name, is_warmup=False):
                 optimizer.zero_grad()
                 optimizer.backward(loss)
                 optimizer.step()
-                torch.cuda.current_stream().record_event(end_event)
-
-                end_event.synchronize()
-                gpu_compute += start_event.elapsed_time(end_event) / 1000.0
+                #torch.cuda.current_stream().record_event(end_event)
+                # end_event.synchronize()
+                # gpu_compute += start_event.elapsed_time(end_event) / 1000.0
 
                 batch_compute_end = time.time()
                 full_time += batch_compute_end - data_time_start
