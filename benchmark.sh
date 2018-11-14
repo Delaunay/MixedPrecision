@@ -31,9 +31,9 @@ for batch in $BATCH_SIZE; do
 
                 ARGS="--gpu --report $REPORT_NAME --data $DATA_LOCATION --static-loss-scale 128 --prof 10"
 
-                sudo sh -c 'echo 1 >/proc/sys/vm/drop_caches'
-                sudo sh -c 'echo 2 >/proc/sys/vm/drop_caches'
-                sudo sh -c 'echo 3 >/proc/sys/vm/drop_caches'
+                #sudo sh -c 'echo 1 >/proc/sys/vm/drop_caches'
+                #sudo sh -c 'echo 2 >/proc/sys/vm/drop_caches'
+                #sudo sh -c 'echo 3 >/proc/sys/vm/drop_caches'
                 free -th >> buffer_evolution.txt
                 resnet-18-pt $ARGS --loader $loader -b $batch --seed $seed -j $worker $arg_option
                 free -th >> buffer_evolution.txt
@@ -41,9 +41,9 @@ for batch in $BATCH_SIZE; do
                 sleep 5
 
                 # Prevent the OS to cache stuff
-                sudo sh -c 'echo 1 >/proc/sys/vm/drop_caches'
-                sudo sh -c 'echo 2 >/proc/sys/vm/drop_caches'
-                sudo sh -c 'echo 3 >/proc/sys/vm/drop_caches'
+                #sudo sh -c 'echo 1 >/proc/sys/vm/drop_caches'
+                #sudo sh -c 'echo 2 >/proc/sys/vm/drop_caches'
+                #sudo sh -c 'echo 3 >/proc/sys/vm/drop_caches'
 
                 free -th >> buffer_evolution.txt
                 resnet-50-pt $ARGS --loader $loader --seed $seed -b $batch -j $worker $arg_option
