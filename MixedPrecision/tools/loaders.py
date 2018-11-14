@@ -28,7 +28,7 @@ def default_pytorch_loader(args):
     return torch.utils.data.DataLoader(
         train_dataset,
         batch_size=args.batch_size,
-        shuffle=None,
+        shuffle=True,
         num_workers=args.workers,
         pin_memory=True
     )
@@ -51,7 +51,7 @@ def prefetch_pytorch_loader(args):
     loader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=args.batch_size,
-        shuffle=None,
+        shuffle=True,
         num_workers=args.workers,
         pin_memory=True,
         collate_fn=utils.timed_fast_collate
@@ -103,7 +103,7 @@ def ziparchive_loader(args):
         batch_size=args.batch_size,
         pin_memory=True,
         num_workers=args.workers,
-        shuffle=None,
+        shuffle=True,
         collate_fn=utils.timed_fast_collate
     )
 
