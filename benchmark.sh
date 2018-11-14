@@ -14,10 +14,10 @@ DATA_LOCATION=/Tmp/delaunap/img_net/
 REPORT_NAME='report.csv'
 
 BATCH_SIZE="64 128 256"
-WORKERS="0 2 4"
+WORKERS="1 2 4"
 
 CONFIG=("" --half)
-LOADERS="torch dali benzina"
+LOADERS="torch dali"
 seed=0
 
 for batch in $BATCH_SIZE; do
