@@ -179,7 +179,7 @@ def train(args, model, dataset, name, is_warmup=False):
 
         report_data = [
             ['Waiting for data (s)'] + data_waiting.to_array() + common,
-            ['GPU Compute Time (s)'] + gpu_compute.to_array() + common,
+            ['GPU Compute Time (s)'] + batch_compute.to_array() + common,
             ['Full Batch Time (s)'] + full_time.to_array() + common,
             ['Compute Speed (img/s)', bs / batch_compute.avg, 'NA', bs / batch_compute.max, bs / batch_compute.min, batch_compute.count] + common,
             ['Effective Speed (img/s)', bs / full_time.avg, 'NA', bs / full_time.max, bs / full_time.min, batch_compute.count] + common,
