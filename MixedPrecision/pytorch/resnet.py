@@ -87,6 +87,7 @@ def train(args, model, dataset, name, is_warmup=False):
     data_loading_cpu = StatStream(drop_first_obs=10)
     full_time = StatStream(drop_first_obs=10)
     iowait = StatStream(drop_first_obs=10)
+    transfert_time = StatStream(drop_first_obs=10)
 
     start_event = torch.cuda.Event(enable_timing=True, blocking=False, interprocess=False)
     end_event = torch.cuda.Event(enable_timing=True, blocking=False, interprocess=False)
@@ -113,10 +114,11 @@ def train(args, model, dataset, name, is_warmup=False):
             effective_batch = 0
 
             for index, (x, y) in enumerate(dataset):
+                transfert_start = time.time()
                 x = x.cuda()
                 y = y.cuda()
-
                 data_time_end = time.time()
+                transfert_time += (data_time_end - transfert_start)
                 data_waiting += (data_time_end - data_time_start)
 
                 # compute output
@@ -164,9 +166,9 @@ def train(args, model, dataset, name, is_warmup=False):
                 epoch_compute.update(epoch_compute_end - epoch_compute_start)
 
                 if not should_run():
-                    gpu_monitor.stop()
-                    monitor_proc.terminate()
                     break
+            if not should_run():
+                break
     finally:
         gpu_monitor.stop()
         monitor_proc.terminate()
