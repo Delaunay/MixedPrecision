@@ -2,18 +2,18 @@
 
 #rsync -ax -e /data/lisa/data/ImageNet2012_jpeg/* /Tmp/delaunap/img_net/ &
 
-DATA_LOCATION=/data/lisa/data/ImageNet2012_256x256/
-DATA_LOCATION=/data/lisa/data/ImageNet2012_jpeg/
+DATA_LOCATION=/data/lisa/data/ImageNet2012_256x256/train
+DATA_LOCATION=/data/lisa/data/ImageNet2012_jpeg/train
 
 DATA_LOCATION_BENZINA=/Tmp/delaunap/img_h264
 DATA_LOCATION_BENZINA=/data/lisa/data/ImageNet2012_h264
 
 # Local Copy
-DATA_LOCATION=/Tmp/delaunap/img_net/
+#DATA_LOCATION=/Tmp/delaunap/img_net/train
 
 REPORT_NAME='report.csv'
 
-BATCH_SIZE="64 128 256"
+BATCH_SIZE="256"
 WORKERS="1 2 4"
 
 CONFIG=("" --half)
