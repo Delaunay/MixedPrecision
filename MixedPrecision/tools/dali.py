@@ -25,7 +25,7 @@ class HybridTrainPipe(Pipeline):
             file_list=file_name,
             shard_id=0,
             num_shards=1,
-            random_shuffle=False)
+            random_shuffle=True)
 
         self.decode = ops.nvJPEGDecoder(device="mixed", output_type=types.RGB)
 

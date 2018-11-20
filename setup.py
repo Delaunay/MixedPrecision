@@ -14,10 +14,6 @@ if __name__ == '__main__':
             'MixedPrecision.pytorch',
             'MixedPrecision.tensorflow',
             'MixedPrecision.tools'],
-        install_requires=[
-            'torch',
-            'torchvision'
-        ],
         entry_points={
             'console_scripts': [
                 # Pytorch

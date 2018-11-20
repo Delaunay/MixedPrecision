@@ -6,7 +6,7 @@ import torch.utils.data.distributed
 
 import torchvision
 import torchvision.transforms as transforms
-
+from MixedPrecision.tools.dataloader import TimedImageFolder
 
 def default_pytorch_loader(args):
     normalize = transforms.Normalize(
@@ -21,17 +21,16 @@ def default_pytorch_loader(args):
         normalize
     ])
 
-    train_dataset = torchvision.datasets.ImageFolder(
+    train_dataset = TimedImageFolder(
         args.data,
         data_transforms)
 
     return torch.utils.data.DataLoader(
         train_dataset,
         batch_size=args.batch_size,
-        shuffle=None,
+        shuffle=True,
         num_workers=args.workers,
-        pin_memory=True
-    )
+        pin_memory=True)
 
 
 def prefetch_pytorch_loader(args):
@@ -44,14 +43,14 @@ def prefetch_pytorch_loader(args):
         transforms.RandomHorizontalFlip(),
     ])
 
-    train_dataset = torchvision.datasets.ImageFolder(
+    train_dataset = TimedImageFolder(
         args.data,
         data_transforms)
 
     loader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=args.batch_size,
-        shuffle=None,
+        shuffle=True,
         num_workers=args.workers,
         pin_memory=True,
         collate_fn=utils.timed_fast_collate
@@ -103,7 +102,7 @@ def ziparchive_loader(args):
         batch_size=args.batch_size,
         pin_memory=True,
         num_workers=args.workers,
-        shuffle=None,
+        shuffle=True,
         collate_fn=utils.timed_fast_collate
     )
 

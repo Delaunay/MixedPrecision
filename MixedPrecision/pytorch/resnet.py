@@ -116,7 +116,8 @@ def train(args, model, dataset, name, is_warmup=False):
             for index, (x, y) in enumerate(dataset):
                 transfert_start = time.time()
                 x = x.cuda()
-                y = y.cuda()
+                y = y.cuda().long()
+
                 data_time_end = time.time()
                 transfert_time += (data_time_end - transfert_start)
                 data_waiting += (data_time_end - data_time_start)
@@ -124,20 +125,14 @@ def train(args, model, dataset, name, is_warmup=False):
                 # compute output
                 batch_compute_start = time.time()
 
-                # Compute time using the GPU as well
-                # torch.cuda.current_stream().record_event(start_event)
-
                 output = model(x)
-                loss = criterion(output, y.long())
+                loss = criterion(output, y)
                 floss = loss.item()
 
                 # compute gradient and do SGD step
                 optimizer.zero_grad()
                 optimizer.backward(loss)
                 optimizer.step()
-                #torch.cuda.current_stream().record_event(end_event)
-                # end_event.synchronize()
-                # gpu_compute += start_event.elapsed_time(end_event) / 1000.0
 
                 batch_compute_end = time.time()
                 full_time += batch_compute_end - data_time_start
@@ -170,6 +165,7 @@ def train(args, model, dataset, name, is_warmup=False):
             if not should_run():
                 break
     finally:
+        print('Done')
         gpu_monitor.stop()
         monitor_proc.terminate()
 
@@ -186,7 +182,7 @@ def train(args, model, dataset, name, is_warmup=False):
 
         report_data = [
             ['Waiting for data (s)'] + data_waiting.to_array() + common,
-            ['GPU Compute Time (s)'] + gpu_compute.to_array() + common,
+            ['GPU Compute Time (s)'] + batch_compute.to_array() + common,
             ['Full Batch Time (s)'] + full_time.to_array() + common,
             ['Compute Speed (img/s)', bs / batch_compute.avg, 'NA', bs / batch_compute.max, bs / batch_compute.min, batch_compute.count] + common,
             ['Effective Speed (img/s)', bs / full_time.avg, 'NA', bs / full_time.max, bs / full_time.min, batch_compute.count] + common,
@@ -201,9 +197,9 @@ def train(args, model, dataset, name, is_warmup=False):
             # ['iowait'] + iowait.to_array() + common
         ]
 
-        # Dali is just a black box..
-        # no metrics are available
-        if False:
+        # Only some loaders support this
+        # So try and print an error but do not fail
+        try:
             data_reading = dataset.dataset.read_timer
             data_transform = dataset.dataset.transform_timer
             collate_time = utils.timed_fast_collate.time_stream
@@ -219,6 +215,8 @@ def train(args, model, dataset, name, is_warmup=False):
             report_data += [['Transform Speed (img/s)', args.workers / data_transform.avg, 'NA', args.workers / data_transform.max, args.workers / data_transform.min, data_transform.count] + common]
             report_data += [['Image Aggregation Speed (img/s)', bs / collate_time.avg, 'NA', bs / collate_time.max, bs / collate_time.min, collate_time.count] + common]
             report_data += [['Image Aggregation Time (s)', collate_time.avg, collate_time.sd, collate_time.max, collate_time.min, collate_time.count] + common]
+        except Exception as e:
+            print(e)
 
         #gpu_monitor.report()
         report_data.extend(gpu_monitor.arrays(common))
