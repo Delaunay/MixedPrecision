@@ -35,6 +35,7 @@ if __name__ == '__main__':
 
                 # 
                 'imgnet_preprocessor = MixedPrecision.pytorch.preprocessor:main'
+                'hdf5_converter = MixedPrecision.tools.hdf5:main'
             ]
         }
     )
