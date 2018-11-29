@@ -26,7 +26,8 @@ def load_imagenet(args):
         'prefetch': loaders.prefetch_pytorch_loader,
         'benzina': loaders.benzina_loader,
         'dali': loaders.dali_loader,
-        'zip': loaders.ziparchive_loader
+        'zip': loaders.ziparchive_loader,
+        'hdf5': loaders.hdf5_loader
     }
 
     data = loader[args.loader](args)

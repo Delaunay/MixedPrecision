@@ -6,7 +6,10 @@ import torch.utils.data.distributed
 
 import torchvision
 import torchvision.transforms as transforms
+
 from MixedPrecision.tools.dataloader import TimedImageFolder
+from MixedPrecision.tools.hdf5 import HDF5Dataset
+
 
 def default_pytorch_loader(args):
     normalize = transforms.Normalize(
@@ -83,6 +86,31 @@ def benzina_loader(args):
     return benzina.make_data_loader(args, 224)
 
 
+def hdf5_loader(args):
+    normalize = transforms.Normalize(
+        mean=[0.485, 0.456, 0.406],
+        std=[0.229, 0.224, 0.225]
+    )
+
+    data_transforms = transforms.Compose([
+        transforms.RandomResizedCrop(224),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        normalize
+    ])
+
+    train_dataset = HDF5Dataset(
+        args.data,
+        data_transforms)
+
+    return torch.utils.data.DataLoader(
+        train_dataset,
+        batch_size=args.batch_size,
+        shuffle=True,
+        num_workers=args.workers,
+        pin_memory=True)
+
+
 def ziparchive_loader(args):
     from MixedPrecision.tools.prefetcher import DataPreFetcher
     from MixedPrecision.tools.stats import StatStream
@@ -148,7 +176,8 @@ def benchmark_loader(args):
         'prefetch': prefetch_pytorch_loader,
         'benzina': benzina_loader,
         'dali': dali_loader,
-        'zip': ziparchive_loader
+        'zip': ziparchive_loader,
+        'hdf5': hdf5_loader
     }
 
     s = time.time()
