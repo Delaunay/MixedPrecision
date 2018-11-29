@@ -4,7 +4,7 @@ import time
 import torch
 import os
 import h5py
-
+import numpy as np
 
 from MixedPrecision.tools.stats import StatStream
 
@@ -87,7 +87,7 @@ def main():
 
 
 if __name__ == '__main__':
-    import numpy as np
+
     # Jpegs are split into blocks of 8x8x (8 bit) pixel (512 bits)
     t = transforms.Compose([
         transforms.Resize((256, 256))
