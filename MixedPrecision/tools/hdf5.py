@@ -25,24 +25,34 @@ def preprocess_to_hdf5(transform, input_folder, output_file):
     for (key, index) in cls:
         classes[index] = np.string_(key)
     # <<<<<<
-
-    hdy = output.create_dataset('label', (len(train_dataset),), dtype='i')
-    hdx = output.create_dataset('data', (len(train_dataset), 3, 256, 256),
-                                dtype='i8', compression='gzip',  compression_opts=4)
+    n = len(train_dataset)
+    hdy = output.create_dataset('label', (n,), dtype='i')
+    hdx = output.create_dataset('data', (n, 3, 256, 256), dtype='i8')
+    # , compression='gzip',  compression_opts=1
 
     load_time = StatStream(10)
+    save_time = StatStream(10)
     start = time.time()
+
+    print('Converting...')
 
     for index, (x, y) in enumerate(train_dataset):
         end = time.time()
         load_time += end - start
 
+        s = time.time()
         hdy[index] = y
         hdx[index] = np.moveaxis(np.array(x), -1, 0)
+        e = time.time()
+
+        save_time += e - s
+
+        if index % 100 == 0 and load_time.avg > 0:
+            print('{:.4f} % Load[avg: {:.4f}s sd: {:.4f}] Save[avg: {:.4f}s sd: {:.4f}]'.format(
+                index / n, 1 / load_time.avg, load_time.sd, 1 / save_time.avg, save_time.sd))
 
         start = time.time()
 
-    print('avg: {:.4f}s sd: {:.4f} {}'.format(load_time.avg, load_time.sd, load_time.count))
     print('{:.4f} img/s'.format(1 / load_time.avg))
 
 
@@ -94,4 +104,4 @@ if __name__ == '__main__':
         # transforms.RandomResizedCrop(256)
     ])
 
-    preprocess_to_hdf5(t, '/home/user1/test_database/train', '/home/user1/test_database/out.hdf5')
+    preprocess_to_hdf5(t, '/media/setepenre/UserData/tmp/fake', '/media/setepenre/UserData/tmp/fake.hdf5')
