@@ -15,12 +15,13 @@ class MultiStageChrono:
         self.total = StatStream(drop)
 
     def start(self):
-        if self.current_stage == 0:
+        if self.start_time == 0:
             self.start_time = time.time()
             self.total_s = self.start_time
         else:
             self.end_time = time.time()
             self.stages[self.current_stage] += (self.end_time - self.start_time)
+            self.start_time = self.end_time
             self.current_stage += 1
 
     def end(self):
@@ -28,6 +29,7 @@ class MultiStageChrono:
         self.stages[self.current_stage] += (self.end_time - self.start_time)
         self.total += self.end_time - self.total_s
         self.current_stage = 0
+        self.start_time = 0
 
     def make_table(self, common: List = None, transform=None):
         common = common or []

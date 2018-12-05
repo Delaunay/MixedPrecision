@@ -17,27 +17,6 @@ import socket
 import psutil
 
 
-def load_imagenet(args):
-    import MixedPrecision.tools.loaders as loaders
-    from MixedPrecision.tools.prefetcher import AsyncPrefetcher
-
-    loader = {
-        'torch': loaders.default_pytorch_loader,
-        'prefetch': loaders.prefetch_pytorch_loader,
-        'benzina': loaders.benzina_loader,
-        'dali': loaders.dali_loader,
-        'zip': loaders.ziparchive_loader,
-        'hdf5': loaders.hdf5_loader
-    }
-
-    data = loader[args.loader](args)
-
-    if args.async:
-        data = AsyncPrefetcher(data, buffering=2)
-
-    return data
-
-
 def current_stream():
     if utils.use_gpu():
         return torch.cuda.current_stream()
@@ -230,6 +209,8 @@ def generic_main(make_model, name):
     import sys
     from MixedPrecision.tools.args import get_parser
     from MixedPrecision.tools.utils import summary
+    import MixedPrecision.tools.loaders as loaders
+
     sys.stderr = sys.stdout
 
     parser = get_parser()
@@ -241,22 +222,13 @@ def generic_main(make_model, name):
 
     utils.set_use_gpu(args.gpu, not args.no_bench_mode)
     utils.set_use_half(args.half)
-
-    for k, v in vars(args).items():
-        print('{:>30}: {}'.format(k, v))
-
-    try:
-        current_device = torch.cuda.current_device()
-        print('{:>30}: {}'.format('GPU Count', torch.cuda.device_count()))
-        print('{:>30}: {}'.format('GPU Name', torch.cuda.get_device_name(current_device)))
-    except:
-        pass
+    utils.show_args(args)
 
     model = make_model()
 
     summary(model, input_size=(3, 224, 224), batch_size=args.batch_size)
 
-    data = load_imagenet(args)
+    data = loaders.load_imagenet(args)
 
     if args.warmup:
         train(args, model, data, name, is_warmup=True)

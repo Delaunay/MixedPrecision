@@ -31,7 +31,8 @@ class StatStream(object):
         for greater precision; without that trick `var` was getting negative on some iteration.
     """
     def __init__(self, drop_first_obs=10):
-        self.struct = Value(StatStreamStruct,
+        self.struct = Value(
+            StatStreamStruct,
             0,                      # sum
             0,                      # sum_sqr
             0,                      # first_obs

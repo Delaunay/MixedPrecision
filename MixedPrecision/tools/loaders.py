@@ -8,7 +8,6 @@ import torchvision
 import torchvision.transforms as transforms
 
 from MixedPrecision.tools.dataloader import TimedImageFolder
-from MixedPrecision.tools.hdf5 import HDF5Dataset
 
 
 def default_pytorch_loader(args):
@@ -87,6 +86,8 @@ def benzina_loader(args):
 
 
 def hdf5_loader(args):
+    from MixedPrecision.tools.hdf5 import HDF5Dataset
+
     normalize = transforms.Normalize(
         mean=[0.485, 0.456, 0.406],
         std=[0.229, 0.224, 0.225]
@@ -146,18 +147,48 @@ def ziparchive_loader(args):
 
 def fake_imagenet(args):
     from MixedPrecision.tools.fakeit import fakeit
+    import MixedPrecision.tools.utils as utils
 
-    print('Faking Imagenet data')
-    target_transform = transforms.Compose([
-        transforms.Lambda(lambda x: utils.enable_cuda(x.long()))
+    normalize = transforms.Normalize(
+        mean=[0.485, 0.456, 0.406],
+        std=[0.229, 0.224, 0.225]
+    )
+
+    data_transforms = transforms.Compose([
+        transforms.RandomResizedCrop(224),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        normalize
     ])
 
-    dataset = fakeit('pytorch', args.batch_size * 10, (3, 224, 224), 1000, data_transforms, target_transform)
+    print('Faking Imagenet data')
+    dataset = fakeit('pytorch', args.batch_size * 10, (3, 224, 224), 1000, data_transforms)
 
     return torch.utils.data.DataLoader(
         dataset, batch_size=args.batch_size, pin_memory=True,
         num_workers=args.workers, shuffle=None, collate_fn=utils.timed_fast_collate
     )
+
+
+def load_imagenet(args):
+    from MixedPrecision.tools.prefetcher import AsyncPrefetcher
+
+    loader = {
+        'torch': default_pytorch_loader,
+        'prefetch': prefetch_pytorch_loader,
+        'benzina': benzina_loader,
+        'dali': dali_loader,
+        'zip': ziparchive_loader,
+        'hdf5': hdf5_loader,
+        'fake': fake_imagenet
+    }
+
+    data = loader[args.loader](args)
+
+    #if args.async:
+    #    data = AsyncPrefetcher(data, buffering=2)
+
+    return data
 
 
 def benchmark_loader(args):
@@ -185,8 +216,8 @@ def benchmark_loader(args):
     data = loader[args.loader](args)
 
     # Using a Prefetcher should only speedup things if some kind of computation is done
-    if args.async:
-        data = AsyncPrefetcher(data, buffering=2)
+    #if args.async:
+    #    data = AsyncPrefetcher(data, buffering=2)
 
     stat = StatStream(4)
     prof = args.prof

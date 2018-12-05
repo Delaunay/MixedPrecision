@@ -73,7 +73,7 @@ def get_parser():
     parser.add_argument('--warmup', action='store_true', default=False,
                         help='do a pre run for benchmarks')
 
-    parser.add_argument('--loader', type=str, default='pytorch',
+    parser.add_argument('--loader', type=str, default='torch',
                         help='The kind of loader to use (torch, prefetch, benzina, dali, zip)')
 
     parser.add_argument('--async', action='store_true', default=False,

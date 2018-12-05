@@ -8,6 +8,18 @@ global_use_gpu = False
 global_use_half = False
 
 
+def show_args(args):
+    for k, v in vars(args).items():
+        print('{:>30}: {}'.format(k, v))
+
+    try:
+        current_device = torch.cuda.current_device()
+        print('{:>30}: {}'.format('GPU Count', torch.cuda.device_count()))
+        print('{:>30}: {}'.format('GPU Name', torch.cuda.get_device_name(current_device)))
+    except:
+        pass
+
+
 def set_use_gpu(val, benchmode=True):
     global global_use_gpu
 
@@ -147,6 +159,23 @@ def bench_collate(collate):
             ['collate_speed', bs / timed.avg, 'NA', bs / timed.max, bs / timed.min, timed.count]
         ]
     )
+
+
+class ThrottleCall:
+    def __init__(self, call, frequency=10):
+        self.call = call
+        self.frequency = frequency
+        self.count = 0
+
+    def __call__(self, *args, **kwargs):
+        self.count += 1
+        if self.count > self.frequency:
+            self.call(*args, **kwargs)
+            self.count = 0
+
+
+def throttle(call, freq):
+    return ThrottleCall(call, freq)
 
 
 if __name__ == '__main__':

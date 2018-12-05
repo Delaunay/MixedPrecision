@@ -43,7 +43,7 @@ def preprocess_to_hdf5(transform, input_folder, output_file):
         s = time.time()
         hdy[index] = y
         hdx[index] = np.moveaxis(np.array(x), -1, 0)
-        e = time.time()
+        e = time.time() 
 
         save_time += e - s
 
