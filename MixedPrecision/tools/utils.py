@@ -171,7 +171,7 @@ class ThrottleCall:
         self.count += 1
         if self.count > self.frequency:
             self.call(*args, **kwargs)
-            self.count = 0
+            self.count = 1
 
 
 def throttle(call, freq):

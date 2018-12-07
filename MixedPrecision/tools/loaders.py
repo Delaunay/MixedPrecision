@@ -10,7 +10,57 @@ import torchvision.transforms as transforms
 from MixedPrecision.tools.dataloader import TimedImageFolder
 
 
-def default_pytorch_loader(args):
+def default_cifar10_loader(args, train=True):
+    transform = transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomVerticalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize((0.5, 0.5, 0.5), (1, 1, 1))
+    ])
+
+    trainset = torchvision.datasets.CIFAR10(
+        root=args.data,
+        train=train,
+        download=True,
+        transform=transform)
+
+    trainloader = torch.utils.data.DataLoader(
+        trainset,
+        batch_size=args.batch_size,
+        shuffle=True,
+        num_workers=args.workers)
+
+    # classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
+    return trainloader
+
+
+def default_cifar100_loader(args, train=True):
+    transform = transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomVerticalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize((0.5, 0.5, 0.5), (1, 1, 1))
+    ])
+
+    trainset = torchvision.datasets.CIFAR100(
+        root=args.data,
+        train=train,
+        download=True,
+        transform=transform)
+
+    trainloader = torch.utils.data.DataLoader(
+        trainset,
+        batch_size=args.batch_size,
+        shuffle=True,
+        num_workers=args.workers)
+
+    # classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
+    return trainloader
+
+
+def default_pytorch_loader(args, train=True):
     normalize = transforms.Normalize(
         mean=[0.485, 0.456, 0.406],
         std=[0.229, 0.224, 0.225]
@@ -35,7 +85,7 @@ def default_pytorch_loader(args):
         pin_memory=True)
 
 
-def prefetch_pytorch_loader(args):
+def prefetch_pytorch_loader(args, train=True):
     from MixedPrecision.tools.prefetcher import DataPreFetcher
     from MixedPrecision.tools.stats import StatStream
     import MixedPrecision.tools.utils as utils
@@ -69,7 +119,7 @@ def prefetch_pytorch_loader(args):
     )
 
 
-def dali_loader(args):
+def dali_loader(args, train=True):
     from MixedPrecision.tools.dali import make_dali_loader
 
     return make_dali_loader(
@@ -79,13 +129,13 @@ def dali_loader(args):
     )
 
 
-def benzina_loader(args):
+def benzina_loader(args, train=True):
     import MixedPrecision.tools.benzina as benzina
 
     return benzina.make_data_loader(args, 224)
 
 
-def hdf5_loader(args):
+def hdf5_loader(args, train=True):
     from MixedPrecision.tools.hdf5 import HDF5Dataset
 
     normalize = transforms.Normalize(
@@ -112,7 +162,7 @@ def hdf5_loader(args):
         pin_memory=True)
 
 
-def ziparchive_loader(args):
+def ziparchive_loader(args, train=True):
     from MixedPrecision.tools.prefetcher import DataPreFetcher
     from MixedPrecision.tools.stats import StatStream
     from MixedPrecision.tools.archive import ZipDataset
@@ -145,7 +195,7 @@ def ziparchive_loader(args):
     )
 
 
-def fake_imagenet(args):
+def fake_imagenet(args, train=True):
     from MixedPrecision.tools.fakeit import fakeit
     import MixedPrecision.tools.utils as utils
 
@@ -170,7 +220,7 @@ def fake_imagenet(args):
     )
 
 
-def load_imagenet(args):
+def load_dataset(args, train=True):
     from MixedPrecision.tools.prefetcher import AsyncPrefetcher
 
     loader = {
@@ -180,10 +230,12 @@ def load_imagenet(args):
         'dali': dali_loader,
         'zip': ziparchive_loader,
         'hdf5': hdf5_loader,
-        'fake': fake_imagenet
+        'fake': fake_imagenet,
+        'torch_cifar10': default_cifar10_loader,
+        'torch_cifar100': default_cifar100_loader,
     }
 
-    data = loader[args.loader](args)
+    data = loader[args.loader](args, train)
 
     #if args.async:
     #    data = AsyncPrefetcher(data, buffering=2)
@@ -202,22 +254,9 @@ def benchmark_loader(args):
     def ignore(x, y):
         pass
 
-    loader = {
-        'torch': default_pytorch_loader,
-        'prefetch': prefetch_pytorch_loader,
-        'benzina': benzina_loader,
-        'dali': dali_loader,
-        'zip': ziparchive_loader,
-        'hdf5': hdf5_loader
-    }
-
     s = time.time()
 
-    data = loader[args.loader](args)
-
-    # Using a Prefetcher should only speedup things if some kind of computation is done
-    #if args.async:
-    #    data = AsyncPrefetcher(data, buffering=2)
+    data = load_dataset(args)
 
     stat = StatStream(4)
     prof = args.prof

@@ -1,32 +1,47 @@
 from MixedPrecision.tools.args import get_parser
+from MixedPrecision.tools.train import Trainer
 from MixedPrecision.tools.loaders import load_dataset
-from baseline import Baseline
+from MixedPrecision.tools.utils import throttle
 
+import torch
 import torchvision.models.resnet as resnet
 
 
-def embed_label(x, y):
-    shape = x.shape
-    size = shape[-1] * shape[-2]
-    x = x.view(-1, 3, size)
-    x[:, 0, y] = 0
-    x[:, 1, y] = 0
-    x[:, 2, y] = 0
-    x = x.view(-1, 3, shape[-2], shape[-1])
-    return x, y
-
-
-class Experience1a(Baseline):
+class Baseline(Trainer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.model.name = self.name = 'Experience1a'
-        self.load_model()
+        self.count = 0
+        self.acc = 0
+        self.cost = 0
+        self.model.name = self.name = 'Baseline'
+
+    def after_batch(self, id, batch_context):
+        print('[{data[epoch][id]:2d} |{data[id]:4d}] acc: {data[acc]:.2f}%  loss: {data[loss]:.4f}'.format(data=batch_context))
+
+    def after_epoch(self, id, epoch_context):
+        print('----')
+        print('[{data[id]:2d}] acc: {acc:.2f}%  loss: {loss:.4f}'.format(
+            data=epoch_context, acc=self.acc * 100 / self.count, loss=self.cost / self.count))
+
+        self.report_train()
+        self.report_gpu()
+        print('----')
+        self.count = 0
+        self.acc = 0
+        self.cost = 0
+
+    def update_stat(self, acc, loss, loss2=1):
+        self.batch_context['acc'] = acc * 100
+        self.batch_context['loss'] = loss
+        self.batch_context['loss2'] = loss2
+
+        self.count += 1
+        self.cost += loss * loss2
+        self.acc += acc
 
     def train_batch(self):
         self.chrono.start()
         index, (x, y) = self.fetch_input()
-
-        x, y = embed_label(x, y)
 
         x = x.cuda()
         y = y.cuda()
@@ -43,7 +58,7 @@ class Experience1a(Baseline):
 
         self.chrono.end()
 
-    def show_testset(self, with_embedded_label=True):
+    def show_testset(self, args, with_embedded_label=True):
         test = load_dataset(args, train=False)
 
         self.count = 0
@@ -52,9 +67,6 @@ class Experience1a(Baseline):
 
         for x, y in test:
             with torch.no_grad():
-                if with_embedded_label:
-                    x, y = embed_label(x, y)
-
                 x = x.cuda()
                 y = y.cuda()
 
@@ -121,18 +133,14 @@ if __name__ == '__main__':
     )
     model.train()
 
-    trainer = Experience1a(
+    trainer = Baseline(
         model=model,
         loader=data_loader,
         criterion=criterion,
         optimizer=optimizer
     )
 
-    trainer.epoch_count = args.epochs
-    #trainer.train()
-    trainer.show_testset(args, True)
-    trainer.show_testset(args, False)
-
-    #trainer.report_gpu()
-    #trainer.report_train()
+    trainer.train()
+    trainer.report_gpu()
+    trainer.report_train()
 

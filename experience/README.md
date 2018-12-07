@@ -8,8 +8,10 @@ Experiementation with classifier
 
 * embed the class label inside the training data `img[112][112] = y` and see if the classifier is able to pick it up during training
    * Accuracy should be ~100%
+   * Reality the embedding is not picked up
 * We test the behaviour by embedding the wrong label in the test image
-   * Accuracy should ne   ~0% if successful
+   * Accuracy should be   ~0% if successful
+   * Reality the embedding is not picked up
 
 This would should overfitting at work. A single pixel is responsible for the classification.
 This should highlight the issue with modern classification deep neural nets and ultimatly what make them

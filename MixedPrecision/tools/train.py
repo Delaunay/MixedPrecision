@@ -1,4 +1,6 @@
 import time
+import torch
+import os
 
 from MixedPrecision.tools.chrono import MultiStageChrono
 from MixedPrecision.tools.nvidia_smi import make_monitor
@@ -16,9 +18,37 @@ class Trainer:
         self.gpu_monitor = None
         self.next_inputs = None
         self.current_iterator = None
-        self.batch_call = throttle(lambda x: self.report_train(), 10)
-        self.epoch_call = lambda: print()
+        self.batch_context = {}
+        self.batch_call = throttle(lambda id, ctx: self.after_batch(id, ctx), 10)
+        self.epoch_context = {}
+        self.epoch_call = lambda id, ctx: self.after_epoch(id, ctx)
+        self.save_model_call = throttle(lambda id, ctx: self.save_model(id, ctx), 20)
         self.batch_id = -1
+        self.previous_checkpoint = None
+        self.stats = open('training.dat', 'w+')
+        self.stats.write('epoch, batch, acc, loss\n')
+
+    def save_model(self, id, ctx):
+        name = '{}_{}'.format(self.model.name, id)
+        torch.save(self.model.state_dict(), name)
+
+        if self.previous_checkpoint is not None:
+            os.remove(self.previous_checkpoint)
+
+        self.previous_checkpoint = name
+        file = open('checkpoint_{}'.format(self.model.name), 'w')
+        file.write(name)
+        file.close()
+
+    def load_model(self):
+        try:
+            file = open('checkpoint_{}'.format(self.model.name), 'r')
+            name = file.read()
+            file.close()
+            self.model.load_state_dict(torch.load(name))
+            print('Model `{}` was loaded from memory'.format(self.model.name))
+        except FileNotFoundError:
+            print('No Checkpoint found for {}'.format(self.model.name))
 
     def has_next(self):
         return self.next_inputs is not None
@@ -61,13 +91,26 @@ class Trainer:
         # Stage 3
         self.chrono.end()
 
+    def after_batch(self, id, batch_context):
+        pass
+
+    def after_epoch(self, id, epoch_context):
+        pass
+
     def train_epoch(self):
         self.current_iterator = enumerate(self.loader)
         self.next_inputs = self._next()
+        id = 0
 
         while self.has_next():
+            self.batch_context = {
+                'epoch': self.epoch_context,
+                'id': id
+            }
             self.train_batch()
-            #self.batch_call(self.batch_id)
+            self.batch_call(id, self.batch_context)
+            self.save_model_call(id, self.batch_context)
+            id += 1
 
     def accuracy(self, loader):
         acc = 0
@@ -83,10 +126,15 @@ class Trainer:
 
         try:
             for epoch in range(0, self.epoch_count):
+                self.epoch_context = {
+                    'id': epoch
+                }
                 self.train_epoch()
+                self.epoch_call(epoch, self.epoch_context)
 
         finally:
             monitor_proc.terminate()
+        self.stats.close()
 
     def report_train(self):
         self.chrono.report()
