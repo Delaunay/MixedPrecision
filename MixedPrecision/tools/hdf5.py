@@ -27,8 +27,8 @@ def preprocess_to_hdf5(transform, input_folder, output_file):
 
     # <<<<<<
     n = len(train_dataset)
-    hdy = output.create_dataset('label', (n,), dtype='i')
-    hdx = output.create_dataset('data', (n, 3, 256, 256), dtype='i8')
+    hdy = output.create_dataset('label', (n,), dtype=np.uint8)
+    hdx = output.create_dataset('data', (n, 3, 256, 256), dtype=np.uint8)
 
     load_time = StatStream(10)
     save_time = StatStream(10)
@@ -41,8 +41,12 @@ def preprocess_to_hdf5(transform, input_folder, output_file):
         load_time += end - start
 
         s = time.time()
+
+        # convert to uint8
+        x = np.array(x, dtype=np.uint8)
+
         hdy[index] = y
-        hdx[index] = np.moveaxis(np.array(x), -1, 0)
+        hdx[index] = np.moveaxis(x, -1, 0)
 
         e = time.time() 
 
@@ -90,6 +94,7 @@ def ignore(x, y):
 
 def main():
     from MixedPrecision.tools.loaders import hdf5_loader
+    from MixedPrecision.tools.utils import show_args
     import argparse
 
     parser = argparse.ArgumentParser('Image Net Preprocessor')
@@ -109,6 +114,7 @@ def main():
     ])
 
     args = parser.parse_args()
+    show_args(args)
 
     if not args.test_only:
         s = time.time()
@@ -126,22 +132,57 @@ def main():
             batch_size=args.batch_size
         )
         loader = hdf5_loader(args)
+        print(' - {} images available'.format(len(loader.dataset)))
 
-        load = StatStream(0)
+        load = StatStream(20)
         start = time.time()
 
         for index, (x, y) in enumerate(loader):
             end = time.time()
             ignore(x, y)
             load += end - start
+
+            if index > 100:
+                break
+
             start = time.time()
 
-        print('{:.4f}'.format(args.batch_size / load.avg))
+        print(' - {:.4f} img/sec (min={:.4f}, max={:.4f})'.format(
+            args.batch_size / load.avg, args.batch_size / load.max, args.batch_size / load.min))
+
+        print(' - {:.4f} sec (min={:.4f}, max={:.4f}, sd={:.4f})'.format(
+            load.avg, load.min, load.max, load.sd))
 
 
 if __name__ == '__main__':
-    main()
+    from MixedPrecision.tools.loaders import hdf5_loader
+    from MixedPrecision.tools.utils import show_args
+    import argparse
 
+    print('Batch Size,	Workers,	Average (s),	SD (s),	Min (s),	Max (s),	Count')
+    for w in (0, 1, 2, 4, 8):
+        for b in (32, 64, 128, 256):
+            # Create a new args that is usable by our data loader
+            args = argparse.Namespace(
+                data='/home/user1/test_database/imgnet/ImageNet.hdf5',
+                workers=w,
+                batch_size=b
+            )
+            loader = hdf5_loader(args)
+            load = StatStream(20)
+            start = time.time()
+
+            for index, (x, y) in enumerate(loader):
+                end = time.time()
+                ignore(x, y)
+                load += end - start
+
+                if index > 100:
+                    break
+
+                start = time.time()
+
+            print('{}, {}, {}, {}, {}, {}, {}'.format(b, w, load.avg, load.sd, load.min, load.max, load.count))
 
 
 
