@@ -228,7 +228,7 @@ def generic_main(make_model, name):
 
     summary(model, input_size=(3, 224, 224), batch_size=args.batch_size)
 
-    data = loaders.load_imagenet(args)
+    data = loaders.load_dataset(args, train=True)
 
     if args.warmup:
         train(args, model, data, name, is_warmup=True)
