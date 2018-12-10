@@ -76,8 +76,8 @@ class DataPreFetcher:
         with torch.cuda.stream(self.stream):
             self.stream.record_event(self.start_event)
 
-            self.next_input = self.next_input.cuda(async=True)
-            self.next_target = self.next_target.cuda(async=True)
+            self.next_input = self.next_input.cuda()
+            self.next_target = self.next_target.cuda()
 
             if utils.use_half():
                 self.next_input = self.next_input.half()

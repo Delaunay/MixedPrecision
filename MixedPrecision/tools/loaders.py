@@ -144,6 +144,8 @@ def hdf5_loader(args, train=True):
     )
 
     data_transforms = transforms.Compose([
+        # data is stored as uint8
+        transforms.ToPILImage(),
         transforms.RandomResizedCrop(224),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
