@@ -36,6 +36,8 @@ def preprocess_to_hdf5(transform, input_folder, output_file):
 
     print('Converting...')
 
+    max_count = 256 * 20
+
     for index, (x, y) in enumerate(train_dataset):
         end = time.time()
         load_time += end - start
@@ -49,9 +51,12 @@ def preprocess_to_hdf5(transform, input_folder, output_file):
 
         if index % 100 == 0 and load_time.avg > 0:
             print('{:.4f} % Load[avg: {:.4f}s sd: {:.4f}] Save[avg: {:.4f}s sd: {:.4f}]'.format(
-                index / n, 1 / load_time.avg, load_time.sd, 1 / save_time.avg, save_time.sd))
+                index * 100 / n, 1 / load_time.avg, load_time.sd, 1 / save_time.avg, save_time.sd))
 
         start = time.time()
+
+        if index > max_count:
+            break
 
     print('{:.4f} img/s'.format(1 / load_time.avg))
 
@@ -62,9 +67,9 @@ class HDF5Dataset(torch.utils.data.Dataset):
         self.transform = transform
         self.target_transform = target_transform
 
-        self.labels = self.files['label']
-        self.samples = self.files['data']
-        self.size = len(self.files['label'])
+        self.labels = self.file['label']
+        self.samples = self.file['data']
+        self.size = len(self.file['label'])
 
     def __getitem__(self, index):
         sample = self.samples[index]
@@ -104,4 +109,12 @@ if __name__ == '__main__':
         # transforms.RandomResizedCrop(256)
     ])
 
-    preprocess_to_hdf5(t, '/media/setepenre/UserData/tmp/fake', '/media/setepenre/UserData/tmp/fake.hdf5')
+    # --input /home/user1/test_database/imgnet/ImageNet2012_jpeg/train/
+    # --ouput /home/user1/test_database/imgnet/ImageNet.hdf5
+
+    # '/media/setepenre/UserData/tmp/fake'
+    # '/media/setepenre/UserData/tmp/fake.hdf5'
+
+    a = '/home/user1/test_database/imgnet/ImageNet2012_jpeg/train/'
+    b = '/home/user1/test_database/imgnet/ImageNet.hdf5'
+    preprocess_to_hdf5(t, a, b)
