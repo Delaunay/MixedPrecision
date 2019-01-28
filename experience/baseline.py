@@ -16,7 +16,7 @@ class Baseline(Trainer):
         self.model.name = self.name = 'Baseline'
 
     def after_batch(self, id, batch_context):
-        print('[{data[epoch][id]:2d} |{data[id]:4d}] acc: {data[acc]:.2f}%  loss: {data[loss]:.4f}'.format(data=batch_context))
+        print('[{data[epoch][id]:2d} |{data[id]:4d}] acc: {data[acc]:6.2f}%  loss: {data[loss]:8.4f}'.format(data=batch_context))
 
     def after_epoch(self, id, epoch_context):
         print('----')
