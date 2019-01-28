@@ -51,7 +51,7 @@ class BaselineRegression(Baseline):
 
         self.chrono.start()
         output = self.model(x)
-        loss = self.criterion(output, x)
+        loss = self.criterion(output, x) ** 0.25
 
         acc = (output.max(dim=1)[1] == y).sum().item() / len(y)
         self.update_stat(acc, loss)

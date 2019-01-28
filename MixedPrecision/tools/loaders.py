@@ -260,7 +260,7 @@ def benchmark_loader(args):
 
     data = load_dataset(args)
 
-    stat = StatStream(4)
+    stat = StatStream(20)
     prof = args.prof
     print('Init time was {:.4f}'.format(time.time() - s))
     print('Starting..')
@@ -268,8 +268,8 @@ def benchmark_loader(args):
     start = time.time()
 
     for j, (x, y) in enumerate(data):
-        x = x.cuda()
-        y = y.cuda()
+        #x = x.cuda()
+        #y = y.cuda()
 
         ignore(x, y)
 
@@ -288,8 +288,9 @@ def benchmark_loader(args):
     print('Done')
 
     hostname = socket.gethostname()
-    current_device = torch.cuda.current_device()
-    gpu = torch.cuda.get_device_name(current_device)
+    #current_device = torch.cuda.current_device()
+    #gpu = torch.cuda.get_device_name(current_device)
+    gpu = 0
     bs = args.batch_size
 
     common = [args.batch_size, args.workers, args.loader, hostname, gpu]
@@ -341,5 +342,10 @@ def main():
     utils.set_use_gpu(True, True)
     utils.set_use_half(True)
 
+    utils.show_args(args)
+
     benchmark_loader(args)
 
+
+if __name__ == '__main__':
+    main()

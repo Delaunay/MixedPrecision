@@ -9,12 +9,12 @@ import numpy as np
 from MixedPrecision.tools.stats import StatStream
 
 
-def preprocess_to_hdf5(transform, input_folder, output_file):
+def preprocess_to_hdf5(transform, input_folder: str, output_file: str):
     train_dataset = torchvision.datasets.ImageFolder(
         input_folder,
         transform)
 
-    output = h5py.File(output_file, 'w')
+    output = h5py.File(output_file, 'w', libver='latest')
 
     # >>>>>>
     # Stores an Array of String representing Index -> class
@@ -28,7 +28,12 @@ def preprocess_to_hdf5(transform, input_folder, output_file):
     # <<<<<<
     n = len(train_dataset)
     hdy = output.create_dataset('label', (n,), dtype=np.uint8)
-    hdx = output.create_dataset('data', (n, 3, 256, 256), dtype=np.uint8)
+    hdx = output.create_dataset(
+        'data',
+        (n, 3, 256, 256),
+        dtype=np.uint8,
+        chunks=(1, 3, 256, 256),  # Chunk Per sample for fast retrieval
+        compression='lzf')
 
     load_time = StatStream(10)
     save_time = StatStream(10)
@@ -58,12 +63,14 @@ def preprocess_to_hdf5(transform, input_folder, output_file):
 
         start = time.time()
 
+    output.close()
     print('{:.4f} img/s'.format(1 / load_time.avg))
 
 
 class HDF5Dataset(torch.utils.data.Dataset):
-    def __init__(self, file_name, transform=None, target_transform=None):
-        self.file = h5py.File(file_name, 'r')
+    def __init__(self, file_name: str, transform=None, target_transform=None):
+        self.file = h5py.File(file_name, 'r', libver='latest', swmr=True)
+
         self.transform = transform
         self.target_transform = target_transform
 
@@ -72,6 +79,8 @@ class HDF5Dataset(torch.utils.data.Dataset):
         self.size = len(self.file['label'])
 
     def __getitem__(self, index):
+        self.samples.refresh()
+
         sample = self.samples[index]
         sample = sample.astype(np.uint8)
 
@@ -86,6 +95,9 @@ class HDF5Dataset(torch.utils.data.Dataset):
 
     def __len__(self):
         return self.size
+
+    def __del__(self):
+        self.file.close()
 
 
 def ignore(x, y):
@@ -159,6 +171,8 @@ if __name__ == '__main__':
     from MixedPrecision.tools.utils import show_args
     import argparse
 
+    #main()
+
     print('Batch Size,	Workers,	Average (s),	SD (s),	Min (s),	Max (s),	Count')
     for w in (0, 1, 2, 4, 8):
         for b in (32, 64, 128, 256):
@@ -182,6 +196,7 @@ if __name__ == '__main__':
 
                 start = time.time()
 
+            del loader
             print('{}, {}, {}, {}, {}, {}, {}'.format(b, w, load.avg, load.sd, load.min, load.max, load.count))
 
 

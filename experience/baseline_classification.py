@@ -7,6 +7,7 @@ if __name__ == '__main__':
     import torch
     import torch.nn as nn
     import torch.nn.parallel
+    import torchvision.models.resnet as resnet
 
     import torch.optim
 
