@@ -82,4 +82,7 @@ def get_parser():
     parser.add_argument('--seed', type=int, default=0,
                         help='seed')
 
+    parser.add_argument('--large-model-support', type=bool, default=False,
+                        help='Enable large model support')
+
     return parser
