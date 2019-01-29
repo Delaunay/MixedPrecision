@@ -222,6 +222,7 @@ def generic_main(make_model, name):
 
     utils.set_use_gpu(args.gpu, not args.no_bench_mode)
     utils.set_use_half(args.half)
+    utils.setup(args)
     utils.show_args(args)
 
     model = make_model()

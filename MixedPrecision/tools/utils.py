@@ -20,9 +20,10 @@ def show_args(args):
         pass
 
 
-
 def setup(args):
-    pass
+    set_use_gpu(args.gpu, not args.no_bench_mode)
+    set_use_half(args.half)
+    set_use_lms(args)
 
 
 def set_use_lms(args):
