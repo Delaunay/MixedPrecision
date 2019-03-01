@@ -32,11 +32,10 @@ def train(args, model, dataset, name, is_warmup=False):
     from MixedPrecision.tools.stats import StatStream
     from MixedPrecision.tools.nvidia_smi import make_monitor
 
-    from apex.fp16_utils import network_to_half
-
     model = utils.enable_cuda(model)
 
     if args.half:
+        from apex.fp16_utils import network_to_half
         model = network_to_half(model)
 
     criterion = utils.enable_cuda(nn.CrossEntropyLoss())
@@ -76,7 +75,7 @@ def train(args, model, dataset, name, is_warmup=False):
 
     # Stop after n print when benchmarking (n * batch_count) batch
     print_count = 0
-    monitor_proc, gpu_monitor = make_monitor(loop_interval=250)
+    # monitor_proc, gpu_monitor = make_monitor(loop_interval=250)
 
     def should_run():
         if args.prof is None:
@@ -113,6 +112,8 @@ def train(args, model, dataset, name, is_warmup=False):
                 optimizer.zero_grad()
                 optimizer.backward(loss)
                 optimizer.step()
+                
+                #print(floss)
 
                 batch_compute_end = time.time()
                 full_time += batch_compute_end - data_time_start
@@ -146,8 +147,8 @@ def train(args, model, dataset, name, is_warmup=False):
                 break
     finally:
         print('Done')
-        gpu_monitor.stop()
-        monitor_proc.terminate()
+        #gpu_monitor.stop()
+        #monitor_proc.terminate()
 
     if not is_warmup:
         hostname = socket.gethostname()
@@ -199,7 +200,7 @@ def train(args, model, dataset, name, is_warmup=False):
             print(e)
 
         #gpu_monitor.report()
-        report_data.extend(gpu_monitor.arrays(common))
+        #report_data.extend(gpu_monitor.arrays(common))
         report.print_table(header, report_data, filename=args.report)
 
     return
@@ -242,10 +243,17 @@ def generic_main(make_model, name):
 def resnet18_main():
     return generic_main(resnet.resnet18, 'resnet18')
 
-
 def resnet50_main():
     return generic_main(resnet.resnet50, 'resnet50')
 
+def resnet34_main():
+    return generic_main(resnet.resnet34, 'resnet34')
+
+def resnet101_main():
+    return generic_main(resnet.resnet101, 'resnet101')
+
+def densenet161_main():
+    return generic_main(resnet.densenet161, 'densenet161')
 
 if __name__ == '__main__':
     import torch
