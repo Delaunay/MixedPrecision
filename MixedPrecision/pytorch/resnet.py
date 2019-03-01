@@ -6,7 +6,7 @@ import torch.optim
 
 import torch.utils.data
 import torch.utils.data.distributed
-
+import torchvision.models as models
 import torchvision.models.resnet as resnet
 
 import MixedPrecision.tools.utils as utils
@@ -253,7 +253,7 @@ def resnet101_main():
     return generic_main(resnet.resnet101, 'resnet101')
 
 def densenet161_main():
-    return generic_main(resnet.densenet161, 'densenet161')
+    return generic_main(models.densenet161, 'densenet161')
 
 if __name__ == '__main__':
     import torch
