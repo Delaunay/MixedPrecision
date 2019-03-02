@@ -3,9 +3,28 @@ import torch.utils.data.dataloader
 
 import time
 from MixedPrecision.tools.stats import StatStream
+from enum import IntEnum
 
 global_use_gpu = False
 global_use_half = False
+
+
+class DeviceVendor(IntEnum):
+    AMD = 0
+    NVIDIA = 1
+
+
+AMD = DeviceVendor.AMD
+NVIDIA = DeviceVendor.NVIDIA
+
+
+def get_device_vendor():
+    name: str = torch.cuda.get_device_name(0)
+
+    if name.startswith('Ellesmere'):
+        return AMD
+
+    return NVIDIA
 
 
 def show_args(args):

@@ -1,14 +1,7 @@
 import argparse
 
 
-def get_parser():
-    parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
-    parser.add_argument('--data', type=str, metavar='DIR',
-                        help='path to the dataset location')
-
-    parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
-                        help='number of data loading workers (default: 4)')
-
+"""
     parser.add_argument('--hidden_size', default=64, type=int, metavar='HS',
                         help='Size of the Hidden layer for MNIST')
 
@@ -20,6 +13,32 @@ def get_parser():
 
     parser.add_argument('--conv_num', default=32, type=int, metavar='CN',
                         help='Number of Conv Layer for COnv MNIST')
+                        
+                            parser.add_argument('--shape', dest='shape', type=int, nargs='*', default=[1, 28, 28],
+                        help='Shape of the randomly generated images')
+
+    parser.add_argument('--log_device_placement', action='store_true', default=False,
+                        help='Make Tensorflow log device placement')
+                        
+                        
+    parser.add_argument('--batch-reuse', action='store_true', default=False,
+                        help='Re use old batch if data loading is slow')
+                        
+                            
+"""
+
+
+def get_parser():
+    parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
+
+    parser.add_argument('--model', type=str, metavar='model',
+                        help='model name to use')
+
+    parser.add_argument('--data', type=str, metavar='DIR',
+                        help='path to the dataset location')
+
+    parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
+                        help='number of data loading workers (default: 4)')
 
     parser.add_argument('--epochs', default=10, type=int, metavar='N',
                         help='number of total epochs to run')
@@ -55,23 +74,11 @@ def get_parser():
     parser.add_argument('--prof', dest='prof', type=int, default=None,
                         help='Only run N iterations for profiling.')
 
-    parser.add_argument('--shape', dest='shape', type=int, nargs='*', default=[1, 28, 28],
-                        help='Shape of the randomly generated images')
-
-    parser.add_argument('--log_device_placement', action='store_true', default=False,
-                        help='Make Tensorflow log device placement')
-
     parser.add_argument('--no-bench-mode', action='store_true', default=False,
                         help='disable benchmark mode for cudnn')
 
-    parser.add_argument('--batch-reuse', action='store_true', default=False,
-                        help='Re use old batch if data loading is slow')
-
     parser.add_argument('--report', type=str, default=None,
                         help='File Name to write the report in')
-
-    parser.add_argument('--warmup', action='store_true', default=False,
-                        help='do a pre run for benchmarks')
 
     parser.add_argument('--loader', type=str, default='torch',
                         help='The kind of loader to use (torch, prefetch, benzina, dali, zip)')
@@ -84,5 +91,8 @@ def get_parser():
 
     parser.add_argument('--large-model-support', type=bool, default=False,
                         help='Enable large model support')
+
+    parser.add_argument('--warmup', action='store_true', default=False,
+                        help='do a pre run for benchmarks')
 
     return parser
