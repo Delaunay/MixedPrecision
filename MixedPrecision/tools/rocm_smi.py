@@ -109,7 +109,7 @@ class AmdGpuMonitor:
             for i, metric in enumerate(metrics):
                 self.streams[i].update(self.metrics[metric]())
 
-            time.sleep(self.sleep_time)
+            time.sleep(self.sleep_time / 1000)
 
     def stop(self):
         self.running = False
