@@ -38,7 +38,7 @@ class AmdGpuMonitor:
 
         self.file_names = {
             'memory': self.kfdprefix + '/kfd/topology/nodes/1/mem_banks/0/used_memory',
-            'memory_property': self.kfdprefix + '/kfd/topology/nodes/1/mem_banks/0/properties/',
+            'memory_property': self.kfdprefix + '/kfd/topology/nodes/1/mem_banks/0/properties',
             'gpu_usage': self.hwmonprefix + '/hwmon0/device/gpu_busy_percent',
             'temperature': self.hwmonprefix + '/hwmon0/temp1_input',
         }
