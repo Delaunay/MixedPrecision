@@ -69,13 +69,13 @@ class AmdGpuMonitor:
         return props
 
     def parse_memory_props(self):
-        return int(self.read_props(self.files['memory_property'])['size_in_bytes']) / (1024 * 1024)
+        return int(self.read_props(self.file_names['memory_property'])['size_in_bytes']) / (1024 * 1024)
 
     def read_value(self, file_name):
         file = self.files.get(file_name)
 
         if file is None:
-            file = open(self.files[file_name], 'r')
+            file = open(self.file_names[file_name], 'r')
 
         file.seek(0)
         temp = file.readline()
