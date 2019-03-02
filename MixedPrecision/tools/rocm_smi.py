@@ -92,7 +92,7 @@ class AmdGpuMonitor:
         return self.used_memory
 
     def parse_memory_usage(self):
-        return self.used_memory / self.total_memory
+        return self.used_memory * 100.0 / self.total_memory
 
     def parse_memory_total(self):
         return self.total_memory
