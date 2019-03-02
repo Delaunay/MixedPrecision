@@ -201,7 +201,6 @@ def train(args, model, dataset, name, is_warmup=False):
         except Exception as e:
             print(e)
 
-        gpu_monitor.report()
         report_data.extend(gpu_monitor.arrays(common))
         report.print_table(header, report_data, filename=args.report)
 
@@ -240,7 +239,6 @@ def generic_main(args):
 
 def main():
     from MixedPrecision.tools.args import get_parser
-
     parser = get_parser()
     args = parser.parse_args()
     return generic_main(args)

@@ -19,6 +19,8 @@ if __name__ == '__main__':
                 # Pytorch
                 'mnist-conv = MixedPrecision.pytorch.mnist_conv:main',
                 'mnist-full = MixedPrecision.pytorch.mnist_fully_connected:main',
+                'convnets = MixedPrecision.pytorch.convnet:main',
+
                 'resnet-18 = MixedPrecision.pytorch.resnet:resnet18_main',
                 'resnet-50 = MixedPrecision.pytorch.resnet:resnet50_main',
                 'resnet-101 = MixedPrecision.pytorch.resnet:resnet101_main',
