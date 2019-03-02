@@ -154,6 +154,7 @@ def train(args, model, dataset, name, is_warmup=False):
         hostname = socket.gethostname()
         current_device = torch.cuda.current_device()
         gpu = torch.cuda.get_device_name(current_device)
+        gpu = gpu[0:min(10, len(gpu))]
 
         bs = args.batch_size
         loader = args.loader
