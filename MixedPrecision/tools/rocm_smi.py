@@ -88,7 +88,7 @@ class AmdGpuMonitor:
         return float(self.read_value('gpu_usage'))
 
     def parse_memory_used(self):
-        self.used_memory = int(self.read_value('memory'))
+        self.used_memory = int(self.read_value('memory')) / (1024 * 1024)
         return self.used_memory
 
     def parse_memory_usage(self):
@@ -105,11 +105,9 @@ class AmdGpuMonitor:
 
     def run(self):
         print('Running ROCm Monitor')
-
         while self.running:
-
             for i, metric in enumerate(metrics):
-                self.streams[i] += self.metrics[metric]()
+                self.streams[i].update(self.metrics[metric]())
 
             time.sleep(self.sleep_time)
 
@@ -129,3 +127,10 @@ class AmdGpuMonitor:
 
     def arrays(self, common):
         return [['gpu.' + metrics[i]] + stream.to_array() + common for i, stream in enumerate(self.streams)]
+
+
+if __name__ == '__main__':
+
+    mon = AmdGpuMonitor(250, 0)
+
+    mon.run()
