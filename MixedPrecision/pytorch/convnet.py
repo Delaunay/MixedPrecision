@@ -96,6 +96,7 @@ def train(args, model, dataset, name, is_warmup=False):
                 transfert_start = time.time()
                 x = x.cuda()
                 y = y.cuda().long()
+                torch.cuda.synchronize()
 
                 data_time_end = time.time()
                 transfert_time += (data_time_end - transfert_start)
@@ -114,7 +115,7 @@ def train(args, model, dataset, name, is_warmup=False):
                 optimizer.step()
                 
                 #print(floss)
-
+                torch.cuda.synchronize()
                 batch_compute_end = time.time()
                 full_time += batch_compute_end - data_time_start
                 batch_compute += batch_compute_end - batch_compute_start
