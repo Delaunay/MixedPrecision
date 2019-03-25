@@ -10,7 +10,7 @@ def simple_conv2d(m, k, **kwargs):
 
 class KernelFinder(torch.nn.Module):
     """ Given a batch of images returns the convolution 
-        kernel that should applied to each one of them
+        kernels that should be applied to each one of them
     """
     
     def __init__(self, kernel_size=(3, 2, 2)):
@@ -46,7 +46,7 @@ class KernelFinder(torch.nn.Module):
         
         
 class ImageWiseConv2d(torch.nn.Module):
-    """ Apply N kernel to a batch of N images """
+    """ Apply N kernels to a batch of N images """
     
     def forward(self, x):
         images, kernels = x
