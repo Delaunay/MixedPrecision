@@ -35,8 +35,6 @@ def conv2d_iwk(images, kernels, **kwargs):
 
     data = []
     for image, out_kernels in zip(images, kernels):
-        out_channels = []
-
         val = simple_conv2d(image, out_kernels, **kwargs)
 
         c, h, w = val.shape
