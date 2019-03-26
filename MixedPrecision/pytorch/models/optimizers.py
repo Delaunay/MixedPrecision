@@ -17,6 +17,7 @@ class WindowedSGD:
         self.loss_sum = 0
         self.lr_min = lr_min
         self.original_lr = lr
+        self.reset_count = 1            # Use for annealing the jumps are smaller and smaller
         self.loss_min = float('+inf')
 
         self.epoch_steps = epoch_steps
@@ -52,7 +53,8 @@ class WindowedSGD:
             else:
                 # thr lr is too low lets start again
                 if self.lr < self.lr_min:
-                    self.lr = self.original_lr
+                    self.lr = self.original_lr / self.reset_count
+                    self.reset_count += 1
 
                 # the loss has increased on average, we reduce the learning rate
                 elif self.loss_sum > self.loss_min:
