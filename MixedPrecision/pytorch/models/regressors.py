@@ -6,6 +6,16 @@ import torch.nn.functional as F
 from functools import reduce
 
 
+class PrintModule(torch.nn.Module):
+    def __init__(self, msg):
+        super(PrintModule, self).__init__()
+        self.msg = msg
+
+    def forward(self, input):
+        print(self.msg, input.shape)
+        return input
+
+
 class ConvRegressor(torch.nn.Module):
     """ Given a batch of images returns the convolution
         kernel that should applied to each one of them
@@ -16,6 +26,7 @@ class ConvRegressor(torch.nn.Module):
 
     def __init__(self, input_shape, output_shape=(1, 3, 2, 2)):
         super(ConvRegressor, self).__init__()
+
         self.output_shape = output_shape
 
         in_channel, h, w = input_shape
@@ -23,15 +34,15 @@ class ConvRegressor(torch.nn.Module):
         # Given a batch of images return a feature set
         # from which the kernel will be computed
         self.features = nn.Sequential(
-            nn.Conv2d(in_channel, 8, kernel_size=7),
+            # in_channels, out_channels, kernel_size
+            nn.Conv2d(in_channel, out_channels=8, kernel_size=3),
             nn.MaxPool2d(2, stride=2),
             nn.ReLU(True),
-            nn.Conv2d(8, 10, kernel_size=5),
+            nn.Conv2d(8, out_channels=10, kernel_size=5),
             nn.MaxPool2d(2, stride=2),
             nn.ReLU(True)
         )
 
-        # get the output size
         _, c, h, w = self.features(torch.rand(1, *input_shape)).shape
         self.feature_size = c * h * w
         self.output_size = reduce(lambda x, y: x * y, self.output_shape)
@@ -56,7 +67,7 @@ class TransformRegressor(ConvRegressor):
     """ This network regress the transformation matrix for a given image """
 
     def __init__(self, input_shape):
-        super(TransformRegressor, self).__init__(input_shape, output_shape=(1, 2, 3))
+        super(TransformRegressor, self).__init__(input_shape, output_shape=(2, 3))
         # Initialize the weights/bias with identity transformation
         self.regressor[2].weight.data.zero_()
         self.regressor[2].bias.data.copy_(torch.tensor([1, 0, 0, 0, 1, 0], dtype=torch.float))
@@ -66,6 +77,12 @@ class TransformRegressor(ConvRegressor):
         theta = self.forward(x)
         grid = F.affine_grid(theta, x.size())
         return F.grid_sample(x, grid)
+
+
+def test_transform_regressor():
+    reg = TransformRegressor(input_shape=(1, 28, 28))
+
+    assert reg(torch.rand(4, 1, 28, 28)).shape == (4, 2, 3)
 
 
 class KernelRegressor(ConvRegressor):
@@ -99,4 +116,9 @@ def test_KernelFinder():
 
 
 if __name__ == '__main__':
+    import sys
+    sys.stderr = sys.stdout
+
     test_KernelFinder()
+
+    test_transform_regressor()

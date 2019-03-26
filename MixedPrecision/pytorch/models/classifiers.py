@@ -65,7 +65,7 @@ class HOConvClassifier(nn.Module):
         _, c, h, w = o1.shape
 
         self.conv2 = nn.Sequential(
-            HOConv2d(input_shape=(c, h, w), out_channel=20, kernel_size=(10, 5, 5)),
+            HOConv2d(input_shape=(c, h, w), out_channel=20, kernel_size=(c, 5, 5)),
             nn.Dropout2d(),
             nn.MaxPool2d(2)
         )
@@ -88,6 +88,9 @@ class HOConvClassifier(nn.Module):
 
 if __name__ == '__main__':
 
+    import sys
+    sys.stderr = sys.stdout
+
     mnist_cls = ConvClassifier(input_shape=(1, 28, 28))
     mnist_cls(torch.rand(4, 1, 28, 28))
 
@@ -96,3 +99,6 @@ if __name__ == '__main__':
 
     imagenet_hocls = HOConvClassifier(input_shape=(3, 224, 224))
     imagenet_hocls(torch.rand(4, 3, 224, 224))
+
+    mnist_hocls = HOConvClassifier(input_shape=(1, 28, 28))
+    mnist_hocls(torch.rand(4, 1, 28, 28))
