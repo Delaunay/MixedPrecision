@@ -27,6 +27,7 @@ def train(models, epochs, dataset, olr, lr_reset_threshold=1e-05):
             lr_min=lr_reset_threshold,
             lr=olr)
 
+        model.train()
         models_optim.append((model, optimizer))
 
     costs = []
