@@ -84,7 +84,7 @@ if __name__ == '__main__':
     parser.add_argument('--cpu', action='store_true')
     args = parser.parse_args()
 
-    device = 'gpu'
+    device = 'cuda'
     if args.cpu or not torch.cuda.is_available():
         device = 'cpu'
 
