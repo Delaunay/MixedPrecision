@@ -9,9 +9,9 @@ from MixedPrecision.pytorch.models.optimizers import WindowedSGD
 from benchutils.chrono import MultiStageChrono
 
 
-def train(models, epochs, dataset, olr, lr_reset_threshold=1e-05, output_name='/tmp/'):
+def train(models, epochs, dataset, olr, lr_reset_threshold=1e-05, output_name='/tmp/', device_name='gpu'):
 
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device(device_name)
 
     train_loader = torch.utils.data.DataLoader(
         batch_size=64,
@@ -57,17 +57,18 @@ def train(models, epochs, dataset, olr, lr_reset_threshold=1e-05, output_name='/
                         all_cost[mid] += loss.item()
                         optimizer.step(loss)
 
-            torch.cuda.synchronize()
+            if torch.cuda.is_available():
+                torch.cuda.synchronize()
 
         with epoch_time.time('check_point'):
             for name, (model, _) in models_optim.items():
                 torch.save(model.state_dict(), f'{output_name}/{name}_{e}')
 
-        print(f'Train {step_time.val:6.2f} {e:3d}/{epochs:3d} '
-              f'{all_cost[0]:8.2f}:{models_optim["conv"][1].lr} '
-              f'{all_cost[1]:8.2f}:{models_optim["spatial_conv"][1].lr} '
-              f'{all_cost[2]:8.2f}:{models_optim["HO_conv"][1].lr} '
-              f'{all_cost[3]:.2f}:{models_optim["spatial_HO"][1].lr} ')
+        print(f'{step_time.val:6.2f},{e:3d}/{epochs:3d}, '
+              f'{all_cost[0]:8.2f}:{models_optim["conv"][1].lr}, '
+              f'{all_cost[1]:8.2f}:{models_optim["spatial_conv"][1].lr}, '
+              f'{all_cost[2]:8.2f}:{models_optim["HO_conv"][1].lr}, '
+              f'{all_cost[3]:8.2f}:{models_optim["spatial_HO"][1].lr} ')
 
         costs.append(all_cost)
 
@@ -77,6 +78,15 @@ def train(models, epochs, dataset, olr, lr_reset_threshold=1e-05, output_name='/
 if __name__ == '__main__':
     from torchvision import datasets, transforms
     import glob
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--cpu', action='store_true')
+    args = parser.parse_args()
+
+    device = 'gpu'
+    if args.cpu or not torch.cuda.is_available():
+        device = 'cpu'
 
     output = '/Tmp/pytorch'
     init_path = f'{"/".join(MixedPrecision.__file__.split("/")[:-1])}/pytorch/models/weights'
@@ -115,7 +125,7 @@ if __name__ == '__main__':
         ])
     )
 
-    train(models, 100, mnist, 0.01, 1e-05, output)
+    train(models, 100, mnist, 0.01, 1e-05, output, device)
 
 
 
