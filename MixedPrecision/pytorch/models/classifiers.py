@@ -39,10 +39,10 @@ class ConvClassifier(nn.Module):
 class SpatialTransformerClassifier(nn.Module):
     """ Apply a classifier algorithm after removing an affine transform """
 
-    def __init__(self, input_shape=(3, 32, 32)):
+    def __init__(self, cls, input_shape=(3, 32, 32)):
         super(SpatialTransformerClassifier, self).__init__()
         self.untransform = TransformRegressor(input_shape)
-        self.classifier = ConvClassifier(input_shape)
+        self.classifier = cls
 
     def forward(self, x):
         x = self.untransform.remove_transform(x)

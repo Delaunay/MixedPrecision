@@ -51,10 +51,12 @@ def train(models, epochs, dataset, olr, lr_reset_threshold=1e-05):
 if __name__ == '__main__':
     from torchvision import datasets, transforms
 
+    ishape = (1, 28, 28)
     models = [
-        ConvClassifier(input_shape=(1, 28, 28)),
-        SpatialTransformerClassifier(input_shape=(1, 28, 28)),
-        HOConvClassifier(input_shape=(1, 28, 28))
+        ConvClassifier(input_shape=ishape),
+        SpatialTransformerClassifier(ConvClassifier(ishape), input_shape=ishape),
+        HOConvClassifier(input_shape=ishape)
+        SpatialTransformerClassifier(HOConvClassifier(ishape), input_shape=ishape),
     ]
 
     mnist = datasets.MNIST(
