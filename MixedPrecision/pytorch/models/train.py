@@ -62,10 +62,10 @@ def train(models, epochs, dataset, olr, lr_reset_threshold=1e-05, output_name='/
                 torch.save(model.state_dict(), f'{output_name}/{name}_{e}')
 
         print(f'Train {step_time.val:6.2f} {e:3d}/{epochs:3d} '
-              f'{all_cost[0]:6.2f}:{models_optim["conv"][1].lr} '
-              f'{all_cost[1]:6.2f}:{models_optim["spatial_conv"][1].lr} '
-              f'{all_cost[2]:6.2f}:{models_optim["HO_conv"][1].lr} '
-              f'{all_cost[3]:6.2f}:{models_optim["spatial_HO"][1].lr} ')
+              f'{all_cost[0]:8.2f}:{models_optim["conv"][1].lr} '
+              f'{all_cost[1]:8.2f}:{models_optim["spatial_conv"][1].lr} '
+              f'{all_cost[2]:8.2f}:{models_optim["HO_conv"][1].lr} '
+              f'{all_cost[3]:.2f}:{models_optim["spatial_HO"][1].lr} ')
 
         costs.append(all_cost)
 
