@@ -1,6 +1,8 @@
 import torch
 import torch.nn.functional as F
 
+import MixedPrecision
+
 from MixedPrecision.pytorch.models.classifiers import HOConvClassifier, ConvClassifier, SpatialTransformerClassifier
 from MixedPrecision.pytorch.models.optimizers import WindowedSGD
 
@@ -77,7 +79,7 @@ if __name__ == '__main__':
     import glob
 
     output = '/Tmp/pytorch'
-    init_path = '/Tmp/inits'
+    init_path = f'{"/".join(MixedPrecision.__file__.split("/")[:-1])}/pytorch/models/weights'
 
     is_saved_init = False
 
@@ -94,6 +96,7 @@ if __name__ == '__main__':
         vals = glob.glob(f'{init_path}/{name}_init')
 
         if len(vals) == 1:
+            print(f'Loading {name}')
             is_saved_init = True
             model.load_state_dict(torch.load(vals[0]))
 
