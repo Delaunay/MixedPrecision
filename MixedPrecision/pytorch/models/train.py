@@ -20,7 +20,12 @@ def train(models, epochs, dataset, olr, lr_reset_threshold=1e-05):
 
     for model in models:
         model = model.to(device)
-        optimizer = WindowedSGD(model.parameters(), epoch_steps=dataset_size, window=dataset_size, lr_min=lr_reset_threshold, lr=olr)
+        optimizer = WindowedSGD(
+            model.parameters(),
+            epoch_steps=dataset_size,
+            window=dataset_size,
+            lr_min=lr_reset_threshold,
+            lr=olr)
 
         models_optim.append((model, optimizer))
 
@@ -55,7 +60,7 @@ if __name__ == '__main__':
     models = [
         ConvClassifier(input_shape=ishape),
         SpatialTransformerClassifier(ConvClassifier(ishape), input_shape=ishape),
-        HOConvClassifier(input_shape=ishape)
+        HOConvClassifier(input_shape=ishape),
         SpatialTransformerClassifier(HOConvClassifier(ishape), input_shape=ishape),
     ]
 
