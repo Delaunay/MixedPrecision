@@ -21,7 +21,7 @@ NVIDIA = DeviceVendor.NVIDIA
 def get_device_vendor():
     name: str = torch.cuda.get_device_name(0)
 
-    if name.startswith('Ellesmere'):
+    if name.startswith('Ellesmere') or name.startswith('Vega'):
         return AMD
 
     return NVIDIA
