@@ -4,8 +4,11 @@ import torch.nn.functional as F
 from MixedPrecision.pytorch.models.classifiers import HOConvClassifier, ConvClassifier, SpatialTransformerClassifier
 from MixedPrecision.pytorch.models.optimizers import WindowedSGD
 
+from benchutils.chrono import MultiStageChrono
 
-def train(models, epochs, dataset, olr, lr_reset_threshold=1e-05):
+
+def train(models, epochs, dataset, olr, lr_reset_threshold=1e-05, output_name='/tmp/'):
+
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     train_loader = torch.utils.data.DataLoader(
@@ -16,9 +19,9 @@ def train(models, epochs, dataset, olr, lr_reset_threshold=1e-05):
     )
 
     dataset_size = len(train_loader)
-    models_optim = []
+    models_optim = {}
 
-    for model in models:
+    for name, model in models.items():
         model = model.to(device)
         optimizer = WindowedSGD(
             model.parameters(),
@@ -28,27 +31,42 @@ def train(models, epochs, dataset, olr, lr_reset_threshold=1e-05):
             lr=olr)
 
         model.train()
-        models_optim.append((model, optimizer))
+        models_optim[name] = (model, optimizer)
 
+    epoch_time = MultiStageChrono(name='train', skip_obs=10)
     costs = []
     for e in range(0, epochs):
         all_cost = [0] * len(models_optim)
 
-        for batch_idx, (data, target) in enumerate(train_loader):
+        with epoch_time.time('epoch') as step_time:
+            for batch_idx, (data, target) in enumerate(train_loader):
 
-            data, target = data.to(device), target.to(device)
+                data, target = data.to(device), target.to(device)
 
-            for mid, (model, optimizer) in enumerate(models_optim):
-                optimizer.zero_grad()
+                with epoch_time.time('models'):
 
-                output = model(data)
-                loss = F.nll_loss(output, target)
-                loss.backward()
+                    for mid, (_, (model, optimizer)) in enumerate(models_optim.items()):
+                        optimizer.zero_grad()
 
-                all_cost[mid] += loss.item()
-                optimizer.step(loss)
+                        output = model(data)
+                        loss = F.nll_loss(output, target)
+                        loss.backward()
 
-        print(f'Train {e:3d}/{epochs:3d} {all_cost} {models_optim[0][1].lr} ')
+                        all_cost[mid] += loss.item()
+                        optimizer.step(loss)
+
+            torch.cuda.synchronize()
+
+        with epoch_time.time('check_point'):
+            for name, (model, _) in models_optim.items():
+                torch.save(model.state_dict(), f'{output_name}/{name}_{e}')
+
+        print(f'Train {step_time.val:6.2f} {e:3d}/{epochs:3d} '
+              f'{all_cost[0]:6.2f}:{models_optim["conv"][1].lr} '
+              f'{all_cost[1]:6.2f}:{models_optim["spatial_conv"][1].lr} '
+              f'{all_cost[2]:6.2f}:{models_optim["HO_conv"][1].lr} '
+              f'{all_cost[3]:6.2f}:{models_optim["spatial_HO"][1].lr} ')
+
         costs.append(all_cost)
 
     return costs
@@ -56,14 +74,33 @@ def train(models, epochs, dataset, olr, lr_reset_threshold=1e-05):
 
 if __name__ == '__main__':
     from torchvision import datasets, transforms
+    import glob
+
+    output = '/Tmp/pytorch'
+    init_path = '/Tmp/inits'
+
+    is_saved_init = False
 
     ishape = (1, 28, 28)
-    models = [
-        ConvClassifier(input_shape=ishape),
-        SpatialTransformerClassifier(ConvClassifier(ishape), input_shape=ishape),
-        HOConvClassifier(input_shape=ishape),
-        SpatialTransformerClassifier(HOConvClassifier(ishape), input_shape=ishape),
-    ]
+    models = {
+        'conv': ConvClassifier(input_shape=ishape),
+        'spatial_conv': SpatialTransformerClassifier(ConvClassifier(ishape), input_shape=ishape),
+        'HO_conv': HOConvClassifier(input_shape=ishape),
+        'spatial_HO': SpatialTransformerClassifier(HOConvClassifier(ishape), input_shape=ishape),
+    }
+
+    # load init if available
+    for name, model in models.items():
+        vals = glob.glob(f'{init_path}/{name}_init')
+
+        if len(vals) == 1:
+            is_saved_init = True
+            model.load_state_dict(torch.load(vals[0]))
+
+    # do not save init state if loaded from saved init
+    if not is_saved_init:
+        for name, model in models.items():
+            torch.save(model.state_dict(), f'{output}/{name}_init')
 
     mnist = datasets.MNIST(
         root='/tmp',
@@ -75,7 +112,7 @@ if __name__ == '__main__':
         ])
     )
 
-    train(models, 100, mnist, 0.01, 1e-05)
+    train(models, 100, mnist, 0.01, 1e-05, output)
 
 
 
