@@ -47,18 +47,24 @@ def train(models, epochs, dataset, olr, lr_reset_threshold=1e-05, output_name='/
 
                 with epoch_time.time('models'):
 
-                    for mid, (_, (model, optimizer)) in enumerate(models_optim.items()):
-                        optimizer.zero_grad()
+                    for mid, (name, (model, optimizer)) in enumerate(models_optim.items()):
 
-                        output = model(data)
-                        loss = F.nll_loss(output, target)
-                        loss.backward()
+                        with epoch_time.time(model):
+                            optimizer.zero_grad()
 
-                        all_cost[mid] += loss.item()
-                        optimizer.step(loss)
+                            output = model(data)
+                            loss = F.nll_loss(output, target)
+                            loss.backward()
 
-            if torch.cuda.is_available():
-                torch.cuda.synchronize()
+                            all_cost[mid] += loss.item()
+                            optimizer.step(loss)
+
+                            if torch.cuda.is_available():
+                                torch.cuda.synchronize()
+                        # ---
+                    # ---
+                # ---
+            # ---
 
         with epoch_time.time('check_point'):
             for name, (model, _) in models_optim.items():
@@ -72,6 +78,7 @@ def train(models, epochs, dataset, olr, lr_reset_threshold=1e-05, output_name='/
 
         costs.append(all_cost)
 
+    print(epoch_time.to_json())
     return costs
 
 
