@@ -83,6 +83,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--cpu', action='store_true')
     args = parser.parse_args()
+    
+    torch.manual_seed(1)
+    torch.cuda.manual_seed_all(1)
 
     device = 'cuda'
     if args.cpu or not torch.cuda.is_available():
