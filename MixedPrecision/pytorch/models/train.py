@@ -64,11 +64,9 @@ def train(models, epochs, dataset, olr, lr_reset_threshold=1e-05, output_name='/
             for name, (model, _) in models_optim.items():
                 torch.save(model.state_dict(), f'{output_name}/{name}_{e}')
 
-        print(f'{step_time.val:6.2f},{e:3d}/{epochs:3d}, '
-              f'{all_cost[0]:8.2f}:{models_optim["conv"][1].lr}, '
-              f'{all_cost[1]:8.2f}:{models_optim["spatial_conv"][1].lr}, '
-              f'{all_cost[2]:8.2f}:{models_optim["HO_conv"][1].lr}, '
-              f'{all_cost[3]:8.2f}:{models_optim["spatial_HO"][1].lr} ')
+        infos = [f'{all_cost[idx]:8.2f}, {models_optim[name][1].lr:10.8f}' for idx, name in enumerate(models_optim)]
+
+        print(f'{e:3d}/{epochs:3d}, {step_time.val:6.2f}, ' + ', '.join(infos))
 
         costs.append(all_cost)
 
@@ -83,6 +81,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--cpu', action='store_true')
     args = parser.parse_args()
+
+    torch.manual_seed(0)
+    torch.cuda.manual_seed_all(0)
 
     device = 'cuda'
     if args.cpu or not torch.cuda.is_available():
