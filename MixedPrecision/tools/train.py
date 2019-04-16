@@ -103,14 +103,17 @@ class Trainer:
         id = 0
 
         while self.has_next():
-            self.batch_context = {
-                'epoch': self.epoch_context,
-                'id': id
-            }
-            self.train_batch()
-            self.batch_call(id, self.batch_context)
-            self.save_model_call(id, self.batch_context)
-            id += 1
+            try:
+                self.batch_context = {
+                    'epoch': self.epoch_context,
+                    'id': id
+                }
+                self.train_batch()
+                self.batch_call(id, self.batch_context)
+                self.save_model_call(id, self.batch_context)
+                id += 1
+            except Exception as e:
+                print(e)
 
     def accuracy(self, loader):
         acc = 0

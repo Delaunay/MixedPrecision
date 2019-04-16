@@ -20,6 +20,20 @@ def show_args(args):
         pass
 
 
+def setup(args):
+    set_use_gpu(args.gpu, not args.no_bench_mode)
+    set_use_half(args.half)
+    set_use_lms(args)
+
+
+def set_use_lms(args):
+    if args.large_model_support:
+        import torch.cuda
+        torch.cuda.set_enabled_lms(True)
+        #torch.cuda.set_limit_lms(0)
+        #torch.cuda.set_size_lms(size)
+
+
 def set_use_gpu(val, benchmode=True):
     global global_use_gpu
 

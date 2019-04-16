@@ -14,7 +14,7 @@ import MixedPrecision.tools.report as report
 from MixedPrecision.tools.prefetcher import DataPreFetcher
 
 import socket
-import psutil
+# import psutil
 
 
 def current_stream():
@@ -222,13 +222,14 @@ def generic_main(make_model, name):
 
     utils.set_use_gpu(args.gpu, not args.no_bench_mode)
     utils.set_use_half(args.half)
+    utils.setup(args)
     utils.show_args(args)
 
     model = make_model()
 
     summary(model, input_size=(3, 224, 224), batch_size=args.batch_size)
 
-    data = loaders.load_imagenet(args)
+    data = loaders.load_dataset(args, train=True)
 
     if args.warmup:
         train(args, model, data, name, is_warmup=True)
@@ -247,4 +248,61 @@ def resnet50_main():
 
 
 if __name__ == '__main__':
-    resnet18_main()
+    import torch
+    import torch.nn as nn
+    import torch.nn.parallel
+
+    import torch.optim
+
+    import torch.utils.data
+    import torch.utils.data.distributed
+
+    import torchvision.models.resnet as resnet
+    import time
+
+    model = resnet.resnet18() # .cuda()
+
+    print('Tracing')
+    trace = torch.jit.trace(model, (torch.rand(64, 3, 224, 224),), optimize=True)
+
+    trace.save('resnet18.pt')
+    print('---')
+
+    print(trace.graph)
+
+    data = torch.jit.load('resnet18.pt')
+
+    input = torch.rand(64, 3, 224, 224)
+
+    s = 0
+    s2 = 0
+
+    for i in range(0, 30):
+        t = time.time()
+        data(input)
+        s = time.time() - t
+
+        t = time.time()
+        model(input)
+        s2 = time.time() - t
+
+    print('JIT {}'.format(s))
+    print('Python: {}'.format(s2))
+
+    s = 0
+    s2 = 0
+
+    for i in range(0, 30):
+        t = time.time()
+        data(input)
+        s = time.time() - t
+
+        t = time.time()
+        model(input)
+        s2 = time.time() - t
+
+    print('JIT {}'.format(s))
+    print('Python: {}'.format(s2))
+
+
+

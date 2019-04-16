@@ -1,11 +1,9 @@
 from MixedPrecision.tools.args import get_parser
 from MixedPrecision.tools.loaders import load_dataset
-from MixedPrecision.tools.utils import throttle
-
-from TruncatedResNet import TruncatedResNet
-from baseline import Baseline
+from hybrid_classifier import HybridClassifier, HybridLoss
 
 import torch
+<<<<<<< HEAD
 import torch.nn as nn
 import torchvision.models.resnet as resnet
 import torchvision.transforms as transforms
@@ -48,12 +46,12 @@ class HybridLoss:
         self.classifier_loss = self.classifier_loss.item()
         self.regression_loss = self.regression_loss.item()
         return v
-
-    def cuda(self):
-        self.classifier_loss_function.cuda()
-        return self
+=======
+>>>>>>> 0566951ffd6b02a30b6a5af152a1aeeb5483a7ca
 
 
+
+<<<<<<< HEAD
 class HybridClassifier(nn.Module):
 
     def __init__(self, classes=1000, output=(32, 32)):
@@ -106,6 +104,9 @@ class HybridClassifier(nn.Module):
         x_hat = self.rectify_fc2(x_hat.view(-1, 8 * 15 * 15))
 
         return y_hat, x_hat.view(-1, 3, self.output[0], self.output[1])
+=======
+torch.set_num_threads(12)
+>>>>>>> 0566951ffd6b02a30b6a5af152a1aeeb5483a7ca
 
 
 class Experience1b(Baseline):
