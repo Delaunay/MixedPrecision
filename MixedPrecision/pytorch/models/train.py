@@ -20,6 +20,13 @@ def train(models, epochs, dataset, olr, lr_reset_threshold=1e-05, output_name='/
         dataset=dataset
     )
 
+    if torch.cuda.is_available():
+        nd = torch.cuda.device_count()
+        devices = [torch.device(f'cuda:{i}') for i in range(torch.cuda.device_count())]
+    else:
+        nd = 1
+        devices = [torch.device('cpu')]
+
     dataset_size = len(train_loader)
     models_optim = {}
 
@@ -43,11 +50,19 @@ def train(models, epochs, dataset, olr, lr_reset_threshold=1e-05, output_name='/
         with epoch_time.time('epoch') as step_time:
             for batch_idx, (data, target) in enumerate(train_loader):
 
-                data, target = data.to(device), target.to(device)
-
                 with epoch_time.time('models'):
 
                     for mid, (name, (model, optimizer)) in enumerate(models_optim.items()):
+                        device = devices[mid % nd]
+
+                        if torch.cuda.is_available():
+                            torch.cuda.set_device(device)
+
+                        # g1, torch.float32, True, False)
+                        data = data.to(device, torch.float, True, True)
+                        target = target.to(device, torch.long, True, True)
+
+                        model = model.to(device)
 
                         with epoch_time.time(model):
                             optimizer.zero_grad()
