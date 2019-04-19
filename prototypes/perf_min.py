@@ -120,11 +120,13 @@ class Policy(nn.Module):
         return value
 
     def evaluate_actions(self, inputs, rnn_hxs, masks, action):
-        value, actor_features, rnn_hxs = self.base(inputs, rnn_hxs, masks)
-        dist = self.dist(actor_features)
+        with chrono.time('conv_net', verbose=True):
+            value, actor_features, rnn_hxs = self.base(inputs, rnn_hxs, masks)
 
-        action_log_probs = dist.log_probs(action)
-        dist_entropy = dist.entropy().mean()
+        with chrono.time('dist', verbose=True):
+            dist = self.dist(actor_features)
+            action_log_probs = dist.log_probs(action)
+            dist_entropy = dist.entropy().mean()
 
         return value, action_log_probs, dist_entropy, rnn_hxs
 
