@@ -6,7 +6,7 @@ import torch.optim
 
 import torch.utils.data
 import torch.utils.data.distributed
-
+import torchvision.models as models
 import torchvision.models.resnet as resnet
 
 import MixedPrecision.tools.utils as utils
@@ -14,7 +14,7 @@ import MixedPrecision.tools.report as report
 from MixedPrecision.tools.prefetcher import DataPreFetcher
 
 import socket
-# import psutil
+import psutil
 
 
 def current_stream():
@@ -30,13 +30,12 @@ def train(args, model, dataset, name, is_warmup=False):
     import MixedPrecision.tools.utils as utils
     from MixedPrecision.tools.optimizer import OptimizerAdapter
     from MixedPrecision.tools.stats import StatStream
-    from MixedPrecision.tools.nvidia_smi import make_monitor
-
-    from apex.fp16_utils import network_to_half
+    from MixedPrecision.tools.monitor import make_monitor
 
     model = utils.enable_cuda(model)
 
     if args.half:
+        from apex.fp16_utils import network_to_half
         model = network_to_half(model)
 
     criterion = utils.enable_cuda(nn.CrossEntropyLoss())
@@ -97,6 +96,7 @@ def train(args, model, dataset, name, is_warmup=False):
                 transfert_start = time.time()
                 x = x.cuda()
                 y = y.cuda().long()
+                torch.cuda.synchronize()
 
                 data_time_end = time.time()
                 transfert_time += (data_time_end - transfert_start)
@@ -113,7 +113,9 @@ def train(args, model, dataset, name, is_warmup=False):
                 optimizer.zero_grad()
                 optimizer.backward(loss)
                 optimizer.step()
-
+                
+                #print(floss)
+                torch.cuda.synchronize()
                 batch_compute_end = time.time()
                 full_time += batch_compute_end - data_time_start
                 batch_compute += batch_compute_end - batch_compute_start
@@ -153,6 +155,7 @@ def train(args, model, dataset, name, is_warmup=False):
         hostname = socket.gethostname()
         current_device = torch.cuda.current_device()
         gpu = torch.cuda.get_device_name(current_device)
+        gpu = gpu[0:min(10, len(gpu))].strip()
 
         bs = args.batch_size
         loader = args.loader
@@ -184,8 +187,10 @@ def train(args, model, dataset, name, is_warmup=False):
             data_transform = dataset.dataset.transform_timer
             collate_time = utils.timed_fast_collate.time_stream
 
-            report_data += [['Prefetch CPU Data loading (s)'] + data_loading_cpu.to_array() + common]
-            report_data += [['Prefetch GPU Data Loading (s)'] + data_loading_gpu.to_array() + common]
+            if data_loading_cpu.count > 1:
+                report_data += [['Prefetch CPU Data loading (s)'] + data_loading_cpu.to_array() + common]
+                report_data += [['Prefetch GPU Data Loading (s)'] + data_loading_gpu.to_array() + common]
+
             report_data += [['Read Time (s)'] + data_reading.to_array() + common]
             report_data += [['Transform Time (s)'] + data_transform.to_array() + common]
             report_data += [['Read Speed per process (img/s)', 1.0 / data_reading.avg, 'NA', 1.0 / data_reading.max, 1.0 / data_reading.min, data_reading.count] + common]
@@ -198,23 +203,18 @@ def train(args, model, dataset, name, is_warmup=False):
         except Exception as e:
             print(e)
 
-        #gpu_monitor.report()
         report_data.extend(gpu_monitor.arrays(common))
         report.print_table(header, report_data, filename=args.report)
 
     return
 
 
-def generic_main(make_model, name):
+def generic_main(args):
     import sys
-    from MixedPrecision.tools.args import get_parser
     from MixedPrecision.tools.utils import summary
     import MixedPrecision.tools.loaders as loaders
 
     sys.stderr = sys.stdout
-
-    parser = get_parser()
-    args = parser.parse_args()
 
     torch.set_num_threads(args.workers)
     torch.manual_seed(args.seed)
@@ -225,84 +225,32 @@ def generic_main(make_model, name):
     utils.setup(args)
     utils.show_args(args)
 
-    model = make_model()
+    model = models.__dict__[args.model]()
 
     summary(model, input_size=(3, 224, 224), batch_size=args.batch_size)
 
     data = loaders.load_dataset(args, train=True)
 
     if args.warmup:
-        train(args, model, data, name, is_warmup=True)
+        train(args, model, data, args.model, is_warmup=True)
 
-    train(args, model, data, name, is_warmup=False)
+    train(args, model, data, args.model, is_warmup=False)
 
     sys.exit(0)
 
 
-def resnet18_main():
-    return generic_main(resnet.resnet18, 'resnet18')
-
-
-def resnet50_main():
-    return generic_main(resnet.resnet50, 'resnet50')
+def main():
+    from MixedPrecision.tools.args import get_parser
+    parser = get_parser()
+    args = parser.parse_args()
+    return generic_main(args)
 
 
 if __name__ == '__main__':
-    import torch
-    import torch.nn as nn
-    import torch.nn.parallel
+    from MixedPrecision.tools.args import get_parser
 
-    import torch.optim
-
-    import torch.utils.data
-    import torch.utils.data.distributed
-
-    import torchvision.models.resnet as resnet
-    import time
-
-    model = resnet.resnet18() # .cuda()
-
-    print('Tracing')
-    trace = torch.jit.trace(model, (torch.rand(64, 3, 224, 224),), optimize=True)
-
-    trace.save('resnet18.pt')
-    print('---')
-
-    print(trace.graph)
-
-    data = torch.jit.load('resnet18.pt')
-
-    input = torch.rand(64, 3, 224, 224)
-
-    s = 0
-    s2 = 0
-
-    for i in range(0, 30):
-        t = time.time()
-        data(input)
-        s = time.time() - t
-
-        t = time.time()
-        model(input)
-        s2 = time.time() - t
-
-    print('JIT {}'.format(s))
-    print('Python: {}'.format(s2))
-
-    s = 0
-    s2 = 0
-
-    for i in range(0, 30):
-        t = time.time()
-        data(input)
-        s = time.time() - t
-
-        t = time.time()
-        model(input)
-        s2 = time.time() - t
-
-    print('JIT {}'.format(s))
-    print('Python: {}'.format(s2))
-
-
+    parser = get_parser()
+    args = parser.parse_args()
+    args.model = 'resnet50'
+    generic_main(args)
 

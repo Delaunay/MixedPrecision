@@ -1,3 +1,4 @@
 torch
 apex
 torchvision
+git+git://github.com/Delaunay/benchutils@master#egg=benchutils
