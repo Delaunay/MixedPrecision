@@ -147,7 +147,6 @@ class ProximalPolicyOptimization:
 
         self.optimizer = optim.Adam(actor_critic.parameters(), lr=lr, eps=eps)
 
-    @time_this(chrono)
     def compute_cost(self, action_log_probs, old_action_log_probs_batch, adv_targ, value_preds_batch, values, return_batch, dist_entropy, **kwargs):
         ratio = torch.exp(action_log_probs - old_action_log_probs_batch)
         surr1 = ratio * adv_targ
@@ -189,17 +188,19 @@ class ProximalPolicyOptimization:
                                value_preds_batch, return_batch, masks_batch, old_action_log_probs_batch, adv_targ = sample
 
                             # Reshape to do in a single forward pass for all steps
-                            values, action_log_probs, dist_entropy, _ = self.actor_critic.evaluate_actions(
-                                obs_batch,
-                                recurrent_hidden_states_batch,
-                                masks_batch,
-                                actions_batch)
+                            with self.chrono.time('evaluate', verbose=True):
+                                values, action_log_probs, dist_entropy, _ = self.actor_critic.evaluate_actions(
+                                    obs_batch,
+                                    recurrent_hidden_states_batch,
+                                    masks_batch,
+                                    actions_batch)
 
                             self.optimizer.zero_grad()
 
-                            loss, value_loss, action_loss = ProximalPolicyOptimization.compute_cost(**locals())
+                            with self.chrono.time('cost', verbose=True):
+                                loss, value_loss, action_loss = ProximalPolicyOptimization.compute_cost(**locals())
 
-                            with self.chrono.time('optimizer_step'):
+                            with self.chrono.time('optimizer_step', verbose=True):
                                 loss.backward()
 
                                 nn.utils.clip_grad_norm_(self.actor_critic.parameters(), self.max_grad_norm)
