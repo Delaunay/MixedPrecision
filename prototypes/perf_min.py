@@ -48,7 +48,6 @@ class CNNBase(nn.Module):
 
         self.train()
 
-    @time_this(chrono, verbose=True)
     def forward(self, inputs, rnn_hxs, masks):
         x = self.main(inputs / 255.0)
         return self.critic_linear(x), x, rnn_hxs
@@ -103,11 +102,10 @@ class Policy(nn.Module):
 
         return value, action, action_log_probs, rnn_hxs
 
-    def get_value(self, inputs, rnn_hxs, masks):
+    def get_value(self, inputs, rnn_hxs, masks):`
         value, _, _ = self.base(inputs, rnn_hxs, masks)
         return value
 
-    @time_this(chrono, verbose=True)
     def evaluate_actions(self, inputs, rnn_hxs, masks, action):
         value, actor_features, rnn_hxs = self.base(inputs, rnn_hxs, masks)
         dist = self.dist(actor_features)
@@ -353,7 +351,6 @@ def main():
 
     from a2c_ppo_acktr import algo
     from a2c_ppo_acktr.envs import make_vec_envs
-    from a2c_ppo_acktr.model import Policy
     from a2c_ppo_acktr.storage import RolloutStorage
     from a2c_ppo_acktr.utils import get_vec_normalize, update_linear_schedule
     from a2c_ppo_acktr.visualize import visdom_plot
