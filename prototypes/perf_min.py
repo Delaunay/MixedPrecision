@@ -21,7 +21,7 @@ chrono = MultiStageChrono()
 
 class CNNBase(nn.Module):
     def __init__(self, num_inputs, hidden_size=512):
-        super(CNNBase).__init__()
+        super(CNNBase, self).__init__()
 
         init_ = lambda m: init(m,
             nn.init.orthogonal_,
