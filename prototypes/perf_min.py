@@ -22,6 +22,7 @@ chrono = MultiStageChrono()
 class CNNBase(nn.Module):
     def __init__(self, num_inputs, hidden_size=512):
         super(CNNBase, self).__init__()
+        self._hidden_size = hidden_size
 
         init_ = lambda m: init(m,
             nn.init.orthogonal_,
@@ -51,6 +52,18 @@ class CNNBase(nn.Module):
     def forward(self, inputs, rnn_hxs, masks):
         x = self.main(inputs / 255.0)
         return self.critic_linear(x), x, rnn_hxs
+
+    @property
+    def output_size(self):
+        return self._hidden_size
+
+    @property
+    def recurrent_hidden_state_size(self):
+        return 1
+
+    @property
+    def is_recurrent(self):
+        return False
 
 
 class Policy(nn.Module):
