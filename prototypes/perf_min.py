@@ -181,7 +181,7 @@ class ProximalPolicyOptimization:
                 # this can be parallelized
                 with self.chrono.time('samples', verbose=True):
                     for sample in data_generator: # 32
-                        with self.chrono.time('sample'):
+                        with self.chrono.time('sample', verbose=True):
                             obs_batch, recurrent_hidden_states_batch, actions_batch, \
                                value_preds_batch, return_batch, masks_batch, old_action_log_probs_batch, adv_targ = sample
 
