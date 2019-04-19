@@ -269,7 +269,7 @@ def main():
                     with chrono.time('compute_returns'):
                         rollouts.compute_returns(next_value, args.use_gae, args.gamma, args.tau)
 
-                    with chrono.time('agent.update'):
+                    with chrono.time('agent.update'): # 11.147009023304644
                         value_loss, action_loss, dist_entropy = agent.update(rollouts)
 
                         exp.log_batch_loss(action_loss)
