@@ -12,5 +12,6 @@ def make_data_loader(args, size):
         shape=(size, size),
         warp_transform=benzina.torch.operations.SimilarityTransform(),
         norm_transform=1 / 255,
-        bias_transform=-0.5
+        bias_transform=-0.5,
+        shuffle=True
     )
