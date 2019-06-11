@@ -24,6 +24,7 @@ def main():
     parser.add_argument('--workers', type=int, default=4)
     parser.add_argument('--seed', type=int, default=4)
     parser.add_argument('--epochs', type=int, default=4)
+    parser.add_argument('--sync-all', type=bool, default=False)
 
     args = parser.parse_args()
     chrono = MultiStageChrono(skip_obs=10, sync=None)
@@ -83,17 +84,22 @@ def main():
     if args.prof is not None:
         batch_count = args.prof
 
+    sync_fun = lambda: torch.cuda.current_stream().synchronize()
+    sub_syncs = None
+    if args.sync_all:
+        sub_syncs = sync_fun
+
     print('Computing...')
     model.train()
     for epoch in range(args.epochs):
 
         # we sync after batch_count to not slowdown things
-        with chrono.time('train', skip_obs=1, sync=lambda: torch.cuda.current_stream().synchronize()) as timer:
+        with chrono.time('train', skip_obs=1, sync=sync_fun) as timer:
             for _ in range(batch_count):
 
                 # data loading do not start here so naturally this is not data loading
                 # only the time waiting for the data loading to finish
-                with chrono.time('loading'):
+                with chrono.time('loading', sync=sub_syncs):
                     (input, target), batch_iter = next_batch(batch_iter)
 
                     input = input.to(device)
@@ -101,7 +107,7 @@ def main():
 
                 # if we do not synchronize we only get cuda `launch time`
                 # not the actual compute
-                with chrono.time('compute'):
+                with chrono.time('compute', sync=sub_syncs):
                     output = model(input)
                     loss = criterion(output, target)
 
