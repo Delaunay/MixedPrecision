@@ -85,7 +85,7 @@ def default_pytorch_loader(args, train=True):
         pin_memory=True)
 
 
-def prefetch_pytorch_loader(args, train=True):
+def prefetch_pytorch_loader(args, train=True, pin_memory=True):
     from MixedPrecision.tools.prefetcher import DataPreFetcher
     from MixedPrecision.tools.stats import StatStream
     import MixedPrecision.tools.utils as utils
@@ -104,7 +104,7 @@ def prefetch_pytorch_loader(args, train=True):
         batch_size=args.batch_size,
         shuffle=True,
         num_workers=args.workers,
-        pin_memory=True,
+        pin_memory=pin_memory,
         collate_fn=utils.timed_fast_collate
     )
 
