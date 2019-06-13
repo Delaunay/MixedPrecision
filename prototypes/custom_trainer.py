@@ -7,7 +7,7 @@ import array
 import time
 import math
 
-from MixedPrecision.pytorch.types import *
+from MixedPrecision.pytorch.dtypes import *
 from benchutils.statstream import StatStream
 
 from typing import Tuple

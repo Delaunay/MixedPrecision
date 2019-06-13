@@ -382,6 +382,8 @@ def main():
         device,
         False)
 
+    print(envs.observation_space.shape)
+
     actor_critic = Policy(
         envs.observation_space.shape,
         envs.action_space)
